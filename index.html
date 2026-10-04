@@ -6,166 +6,176 @@
 <title>FINE-FLEX 自動お見積り | SILFINE JAPAN</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
 <style>
 :root{
-  --paper:#F5F6F3; --surface:#FFFFFF; --ink:#18222F; --muted:#5B6675; --line:#D9DED8;
-  --cell:#1B3A63; --cell-hi:#2C5C96; --busbar:#C9D3DD; --sun:#E3A21A; --sun-ink:#4A3200;
-  --ok:#2E7D4F; --danger:#B3261E; --focus:#2C5C96;
-  box-sizing:border-box;
+  --paper:#F4F6FB; --surface:#FFFFFF; --ink:#222631; --muted:#5E6675; --line:#DCE1EC;
+  --blue:#2448C2; --blue-deep:#1B3A93; --blue-soft:#EAF0FC; --sky:#8FC1D6;
+  --yellow:#F6D46B; --yellow-soft:#FFF7DA; --orange:#EFB13B; --field:#F0F0F0;
+  --ok:#2E7D4F; --danger:#C62828; --focus:#2448C2;
+  --cell:#1B3A63; --cell-hi:#2C5C96; --busbar:#C9D3DD;
+  color-scheme:light; box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --paper:#11161D; --surface:#19212B; --ink:#E7ECF1; --muted:#9AA6B4; --line:#2B3643;
-    --cell:#2C5C96; --cell-hi:#4A7FC0; --busbar:#5F7085; --sun:#F0B43A; --sun-ink:#1E1400;
-    --ok:#5DBB86; --danger:#F08A82; --focus:#7FA9DD;
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#11161D; --surface:#19212B; --ink:#E7ECF1; --muted:#9AA6B4; --line:#2B3643;
-  --cell:#2C5C96; --cell-hi:#4A7FC0; --busbar:#5F7085; --sun:#F0B43A; --sun-ink:#1E1400;
-  --ok:#5DBB86; --danger:#F08A82; --focus:#7FA9DD;
 }
 *,*::before,*::after{box-sizing:inherit}
 [hidden]{display:none!important}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--paper);color:var(--ink);
-  font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
-  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
-.num{font-variant-numeric:tabular-nums}
-button,input,select,textarea{font:inherit;color:inherit}
+body{margin:0;background:var(--surface);color:var(--ink);
+  font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+  font-size:16px;line-height:1.75;letter-spacing:.04em;-webkit-font-smoothing:antialiased}
+.en{font-family:"Poppins","Noto Sans JP",sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
-a{color:var(--cell-hi)}
+a{color:var(--blue)}
 
 .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
-header.top{border-bottom:1px solid var(--line);background:var(--surface)}
-header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px}
-.brand{font-weight:700;letter-spacing:.02em;font-size:15px}
-.brand small{display:block;font-weight:400;color:var(--muted);font-size:12px;letter-spacing:0}
-.langs{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-.langs button{border:0;background:none;padding:6px 14px;cursor:pointer;font-size:14px}
-.langs button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+header.top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:72px}
+.brand{text-decoration:none;color:var(--blue-deep);line-height:1.2}
+.brand b{display:block;font-family:"Poppins",sans-serif;font-weight:700;font-size:22px;letter-spacing:.14em}
+.brand small{display:block;font-size:11.5px;color:var(--muted);letter-spacing:.08em}
+.hdr-r{display:flex;align-items:center;gap:14px}
+.back{font-size:13px;font-weight:500;color:var(--blue);text-decoration:none;white-space:nowrap}
+.back:hover{text-decoration:underline}
+@media (max-width:560px){.back{display:none}.brand small{display:none}.langs button{padding:4px 10px;font-size:12px}}
+.langs{flex:none}.langs button{white-space:nowrap}
+.langs{display:flex;border:1.5px solid var(--blue);border-radius:999px;overflow:hidden}
+.langs button{border:0;background:#fff;color:var(--blue);padding:5px 14px;cursor:pointer;font-size:13px;font-weight:500}
+.langs button[aria-pressed="true"]{background:var(--blue);color:#fff}
 
-.intro{padding:40px 0 28px}
-.intro h1{font-size:clamp(28px,4.4vw,44px);line-height:1.2;margin:0 0 12px;font-weight:900;letter-spacing:-.01em}
-.intro p{margin:0;max-width:62ch;color:var(--muted)}
-.mode-note{display:inline-block;margin-top:16px;font-size:13px;padding:4px 10px;border-radius:6px;
-  background:color-mix(in srgb,var(--sun) 22%,transparent)}
+.intro{padding:56px 0 40px;text-align:center}
+.intro .big{font-family:"Poppins",sans-serif;font-weight:700;font-size:clamp(56px,11vw,120px);line-height:1;letter-spacing:.06em;margin:0;
+  background:linear-gradient(90deg,var(--blue) 0%,#4B79C9 45%,var(--sky) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.intro h1{font-size:clamp(22px,3.2vw,30px);margin:10px 0 18px;font-weight:700;letter-spacing:.2em;color:var(--ink)}
+.intro p{margin:0 auto;max-width:44em;color:var(--muted)}
+.mode-note{display:inline-block;margin-top:20px;font-size:13px;padding:5px 14px;border-radius:999px;background:var(--yellow-soft);border:1px solid var(--yellow)}
 
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:32px;align-items:start;padding-bottom:64px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:36px;align-items:start;padding-bottom:72px}
 @media (max-width:960px){.layout{grid-template-columns:1fr}}
 
-section.step{padding:28px 0;border-top:1px solid var(--line)}
-section.step:first-child{border-top:0;padding-top:0}
-.step h2{font-size:20px;margin:0 0 4px;display:flex;gap:12px;align-items:baseline}
-.step h2 .n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;
-  background:var(--cell);color:#fff;font-size:14px;flex:none;transform:translateY(-2px)}
-.step .hint{margin:0 0 18px 40px;color:var(--muted);font-size:14px}
-@media (max-width:560px){.step .hint{margin-left:0}}
+section.step{padding:0 0 40px}
+.step h2{position:relative;margin:0 0 6px;padding:12px 64px 12px 18px;font-size:18px;font-weight:700;letter-spacing:.12em;color:#fff;
+  background:var(--blue);clip-path:polygon(0 0,100% 0,calc(100% - 36px) 100%,0 100%);display:flex;gap:12px;align-items:center}
+.step h2 .n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fff;color:var(--blue);
+  font-family:"Poppins",sans-serif;font-size:14px;font-weight:700;flex:none;letter-spacing:0}
+.step .hint{margin:12px 0 18px;color:var(--muted);font-size:14px}
 
-.choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px}
-.choice{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);
-  border-radius:8px;background:var(--surface);cursor:pointer}
-.choice:has(input:checked){border-color:var(--cell-hi);box-shadow:0 0 0 3px color-mix(in srgb,var(--cell-hi) 20%,transparent)}
-.choice input{margin-top:5px;accent-color:var(--cell-hi)}
-.choice .t{font-weight:500;font-size:15px}
-.choice .d{font-size:12px;color:var(--muted);display:block;line-height:1.5}
+.choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.choice{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;border:1.5px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;transition:border-color .15s}
+.choice:hover{border-color:#9EB2E6}
+.choice:has(input:checked){border-color:var(--blue);background:var(--blue-soft)}
+.choice input{margin-top:6px;accent-color:var(--blue)}
+.choice .t{font-weight:700;font-size:15px;color:var(--blue-deep)}
+.choice .d{font-size:12px;color:var(--muted);display:block;line-height:1.6}
 
 .panels{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
-.panel-card{position:relative;text-align:left;background:var(--surface);border:1.5px solid var(--line);
-  border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s}
-.panel-card:hover{border-color:var(--muted)}
-.panel-card[aria-checked="true"]{border-color:var(--cell-hi);box-shadow:0 0 0 3px color-mix(in srgb,var(--cell-hi) 25%,transparent)}
+.panel-card{position:relative;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s}
+.panel-card:hover{border-color:#9EB2E6}
+.panel-card[aria-checked="true"]{border-color:var(--blue);background:var(--blue-soft)}
 .panel-art{height:84px;display:flex;align-items:center;justify-content:center;perspective:500px;margin-bottom:10px}
 .panel-art svg{max-height:84px;max-width:100%;transition:transform .5s cubic-bezier(.3,.7,.2,1);transform-origin:50% 100%}
 .panel-card[aria-checked="true"] .panel-art svg{transform:rotateX(28deg) scaleY(.92)}
 .panel-card.framed[aria-checked="true"] .panel-art svg{transform:none}
 @media (prefers-reduced-motion:reduce){.panel-art svg{transition:none}}
-.panel-card .model{font-weight:700;font-size:15px}
+.panel-card .model{font-family:"Poppins",sans-serif;font-weight:600;font-size:15px;color:var(--blue-deep);letter-spacing:.03em}
 .badges{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 8px;min-height:22px}
-.badge{font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-.badge.rec{background:var(--sun);border-color:var(--sun);color:var(--sun-ink);font-weight:700}
+.badge{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:#fff;letter-spacing:.02em}
+.badge.rec{background:var(--yellow);border-color:var(--yellow);color:#4A3200;font-weight:700}
 .badge.stock{border-color:var(--ok);color:var(--ok)}
 .panel-card dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:0;font-size:12.5px}
 .panel-card dt{color:var(--muted)}
 .panel-card dd{margin:0;text-align:right}
 .panel-card .price{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-weight:700;display:flex;justify-content:space-between;font-size:13.5px}
 
-.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-.field label,.lbl{font-size:14px;font-weight:500}
+.field{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.field label,.lbl{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px}
 .field .sub{font-size:12px;color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:700;color:#fff;border-radius:999px;padding:1px 9px;letter-spacing:.06em;flex:none}
+.tag.req{background:var(--blue)} .tag.opt{background:var(--orange)}
 input[type=text],input[type=email],input[type=tel],input[type=number],select,textarea{
-  width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface)}
-textarea{min-height:80px;resize:vertical}
-input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.row3{display:grid;grid-template-columns:160px 1fr;gap:14px}
+  width:100%;padding:11px 14px;border:1.5px solid transparent;border-radius:4px;background:var(--field)}
+select{border-color:var(--line);background:#fff}
+textarea{min-height:110px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);background:#fff;outline:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.row3{display:grid;grid-template-columns:170px 1fr;gap:16px}
 @media (max-width:560px){.row2,.row3{grid-template-columns:1fr}}
-.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
-.seg button{border:0;background:var(--surface);padding:8px 16px;cursor:pointer;font-size:14px}
-.seg button[aria-pressed="true"]{background:var(--cell);color:#fff}
+.seg{display:inline-flex;border:1.5px solid var(--blue);border-radius:999px;overflow:hidden;margin-bottom:16px}
+.seg button{border:0;background:#fff;color:var(--blue);padding:8px 18px;cursor:pointer;font-size:14px;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--blue);color:#fff}
 .stepper{display:flex;align-items:stretch;max-width:240px}
-.stepper button{width:44px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-size:20px}
-.stepper button:first-child{border-radius:8px 0 0 8px}
-.stepper button:last-child{border-radius:0 8px 8px 0}
-.stepper input{border-radius:0;border-left:0;border-right:0;text-align:center}
+.stepper button{width:46px;border:0;background:var(--blue);color:#fff;cursor:pointer;font-size:20px}
+.stepper button:first-child{border-radius:999px 0 0 999px}
+.stepper button:last-child{border-radius:0 999px 999px 0}
+.stepper input{border-radius:0;text-align:center}
 .facts{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:6px;font-size:14px;color:var(--muted)}
-.facts b{color:var(--ink);font-weight:700}
+.facts b{color:var(--blue-deep);font-weight:700}
 .check{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;cursor:pointer;font-size:15px}
-.check input{width:18px;height:18px;margin-top:4px;accent-color:var(--cell-hi);flex:none}
+.check input{width:18px;height:18px;margin-top:5px;accent-color:var(--blue);flex:none}
 .err{color:var(--danger);font-size:14px;min-height:1.2em}
-.note{font-size:13px;color:var(--muted);margin:-8px 0 16px}
+.note{font-size:13px;color:var(--muted);margin:-8px 0 16px;padding:10px 14px;background:var(--yellow-soft);border-left:4px solid var(--yellow)}
 
-aside.summary{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));background:var(--surface);
-  border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+aside.summary{position:sticky;top:calc(88px + env(safe-area-inset-top,0px));background:#fff;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(27,58,147,.08)}
 @media (max-width:960px){aside.summary{position:static}}
-.sum-head{background:var(--cell);color:#fff;padding:18px 20px;
-  background-image:linear-gradient(90deg,transparent 0 calc(50% - .5px),rgba(255,255,255,.12) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px)),
-  linear-gradient(0deg,transparent 0 calc(50% - .5px),rgba(255,255,255,.12) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px));
-  background-size:28px 28px}
-.sum-head .lbl{font-size:13px;opacity:.85;font-weight:400}
-.sum-head .total{font-size:36px;font-weight:900;line-height:1.15;letter-spacing:-.01em}
-.sum-head .per{font-size:13px;opacity:.85}
-.sum-body{padding:16px 20px 20px}
+.sum-head{color:#fff;padding:20px 22px;background:linear-gradient(120deg,var(--blue) 0%,var(--blue-deep) 100%)}
+.sum-head .lbl{font-size:13px;opacity:.9;font-weight:500;display:block}
+.sum-head .total{font-family:"Poppins",sans-serif;font-size:36px;font-weight:700;line-height:1.2;letter-spacing:.02em}
+.sum-head .per{font-size:13px;opacity:.9}
+.sum-body{padding:16px 22px 22px}
 .lines{width:100%;border-collapse:collapse;font-size:14px}
 .lines td{padding:6px 0;vertical-align:top}
 .lines td:last-child{text-align:right;white-space:nowrap;padding-left:12px}
 .lines .nt{display:block;font-size:12px;color:var(--muted)}
 .lines tr.sep td{border-top:1px solid var(--line);padding-top:10px}
 .lines tr.disc td:last-child{color:var(--ok)}
-.lines tr.grand td{font-weight:700;font-size:16px}
-.benefits{margin:14px 0;border-radius:8px;background:color-mix(in srgb,var(--sun) 16%,transparent);padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;font-size:12.5px}
-.benefits b{display:block;font-size:17px;line-height:1.3}
-.btn{display:inline-flex;justify-content:center;align-items:center;gap:8px;width:100%;padding:13px 18px;border-radius:8px;
-  border:0;cursor:pointer;font-weight:700;font-size:16px;background:var(--sun);color:var(--sun-ink)}
-.btn:hover{filter:brightness(1.05)}
+.lines tr.grand td{font-weight:700;font-size:16px;color:var(--blue-deep)}
+.benefits{margin:16px 0;border-radius:10px;background:var(--yellow-soft);border:1px solid var(--yellow);padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px}
+.benefits b{display:block;font-size:17px;line-height:1.35;color:var(--blue-deep)}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:10px;width:100%;padding:15px 22px;border-radius:999px;
+  border:0;cursor:pointer;font-weight:700;font-size:16px;letter-spacing:.1em;background:var(--blue-deep);color:#fff;transition:background .15s}
+.btn::before{content:"";width:7px;height:7px;border-top:2px solid currentColor;border-right:2px solid currentColor;transform:rotate(45deg)}
+.btn:hover{background:var(--blue)}
 .btn:disabled{opacity:.6;cursor:wait}
-.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink);font-weight:500;font-size:14px;padding:8px 14px;width:auto}
+.btn.ghost{background:#fff;border:1.5px solid var(--blue);color:var(--blue);font-weight:500;font-size:14px;padding:8px 16px;width:auto;letter-spacing:.04em}
+.btn.ghost::before{display:none}
+.btn.ghost:hover{background:var(--blue-soft)}
 .fine{font-size:12px;color:var(--muted);margin:10px 0 0}
 
-.saved{padding:28px 0 0;border-top:1px solid var(--line)}
-.table-wrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:10px;background:var(--surface)}
+.saved{padding:32px 0 0;border-top:1px solid var(--line)}
+.saved h2{color:var(--blue-deep)}
+.table-wrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:10px;background:#fff}
 table.list{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
 table.list th,table.list td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-table.list th{font-weight:500;color:var(--muted);font-size:13px}
+table.list th{font-weight:500;color:var(--muted);font-size:13px;background:var(--paper)}
 table.list tr:last-child td{border-bottom:0}
 table.list .r{text-align:right}
 .empty{padding:28px;text-align:center;color:var(--muted);font-size:14px}
-.link{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;color:var(--cell-hi);font-size:14px}
+.link{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;color:var(--blue);font-size:14px}
 
-dialog{border:0;padding:0;border-radius:12px;max-width:min(840px,calc(100vw - 24px));width:100%;background:var(--surface);color:var(--ink)}
-dialog::backdrop{background:rgba(10,15,22,.55)}
-.dlg-bar{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+footer.site{background:var(--blue-deep);color:#fff;padding:56px 0 0}
+footer.site .cols{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:end}
+@media (max-width:760px){footer.site .cols{grid-template-columns:1fr}}
+footer.site .en-big{font-family:"Poppins",sans-serif;font-weight:700;font-size:clamp(40px,6vw,60px);line-height:1;letter-spacing:.04em;margin:0}
+footer.site .jp{font-size:15px;font-weight:700;letter-spacing:.2em;margin:6px 0 24px}
+footer.site .tel{font-family:"Poppins",sans-serif;font-size:clamp(26px,3.6vw,36px);font-weight:600;color:#fff;text-decoration:none;letter-spacing:.06em}
+footer.site address{font-style:normal;font-size:13px;line-height:1.9;opacity:.9;margin-top:14px}
+footer.site .pill{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:420px;padding:14px;border:1.5px solid #fff;border-radius:4px;color:#fff;text-decoration:none;font-weight:700;letter-spacing:.1em}
+footer.site .pill:hover{background:rgba(255,255,255,.1)}
+footer.site .copy{margin-top:48px;padding:16px 0;text-align:center;font-size:12px;background:#16307A;letter-spacing:.08em}
+
+dialog{border:0;padding:0;border-radius:14px;max-width:min(840px,calc(100vw - 24px));width:100%;background:#fff;color:var(--ink)}
+dialog::backdrop{background:rgba(16,30,70,.55)}
+.dlg-bar{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center;background:var(--paper)}
 .dlg-msg{margin-right:auto;font-size:14px;color:var(--ok);font-weight:500}
 .sheet{padding:32px;max-height:75vh;overflow:auto;background:#fff}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
-  background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;max-width:90vw}
+  background:var(--blue-deep);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;max-width:90vw}
 .toast.show{opacity:1}
 
-.q-doc{font-size:13px;color:#18222F;background:#fff;line-height:1.6}
+.q-doc{font-size:13px;color:#18222F;background:#fff;line-height:1.6;letter-spacing:.02em}
 .q-doc h1{font-size:26px;letter-spacing:.3em;text-align:center;margin:0 0 20px;font-weight:700}
 .q-doc .q-meta{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:14px}
 .q-doc .q-to{font-size:16px;border-bottom:1px solid #18222F;padding-bottom:4px;min-width:240px}
@@ -186,16 +196,20 @@ dialog::backdrop{background:rgba(10,15,22,.55)}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand">SILFINE JAPAN<small data-t="brandSub"></small></div>
-    <div class="langs" role="group" aria-label="Language">
-      <button type="button" data-lang="ja" aria-pressed="true">日本語</button>
-      <button type="button" data-lang="en" aria-pressed="false">English</button>
+    <a class="brand" href="https://www.silfine.jp/"><b>SILFINE</b><small data-t="brandSub"></small></a>
+    <div class="hdr-r">
+      <a class="back" href="https://www.silfine.jp/fineflex.php" data-t="backLink"></a>
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="ja" aria-pressed="true">日本語</button>
+        <button type="button" data-lang="en" aria-pressed="false">English</button>
+      </div>
     </div>
   </div>
 </header>
 
 <main class="wrap">
   <div class="intro">
+    <p class="big" aria-hidden="true">Estimate</p>
     <h1 data-t="title"></h1>
     <p data-t="lede"></p>
     <span class="mode-note" id="modeNote"></span>
@@ -254,20 +268,20 @@ dialog::backdrop{background:rgba(10,15,22,.55)}
       <section class="step" aria-labelledby="s5">
         <h2 id="s5"><span class="n">5</span><span data-t="s5"></span></h2>
         <p class="hint" data-t="s5h"></p>
-        <div class="field"><label for="cCompany" data-t="cCompany"></label><input type="text" id="cCompany" autocomplete="organization" maxlength="100"></div>
+        <div class="field"><label for="cCompany"><span class="tag opt" data-t="opt"></span><span data-t="cCompany"></span></label><input type="text" id="cCompany" autocomplete="organization" maxlength="100"></div>
         <div class="row2">
-          <div class="field"><label for="cName" data-t="cName"></label><input type="text" id="cName" autocomplete="name" maxlength="100"></div>
-          <div class="field"><label for="cKana" data-t="cKana"></label><input type="text" id="cKana" maxlength="100"></div>
+          <div class="field"><label for="cName"><span class="tag req" data-t="req"></span><span data-t="cName"></span></label><input type="text" id="cName" autocomplete="name" maxlength="100"></div>
+          <div class="field"><label for="cKana"><span class="tag opt" data-t="opt"></span><span data-t="cKana"></span></label><input type="text" id="cKana" maxlength="100"></div>
         </div>
         <div class="row2">
-          <div class="field"><label for="cEmail" data-t="cEmail"></label><input type="email" id="cEmail" autocomplete="email" maxlength="200"></div>
-          <div class="field"><label for="cTel" data-t="cTel"></label><input type="tel" id="cTel" autocomplete="tel" maxlength="30"></div>
+          <div class="field"><label for="cEmail"><span class="tag req" data-t="req"></span><span data-t="cEmail"></span></label><input type="email" id="cEmail" autocomplete="email" maxlength="200"></div>
+          <div class="field"><label for="cTel"><span class="tag opt" data-t="opt"></span><span data-t="cTel"></span></label><input type="tel" id="cTel" autocomplete="tel" maxlength="30"></div>
         </div>
         <div class="row3">
-          <div class="field"><label for="cZip" data-t="cZip"></label><input type="text" id="cZip" autocomplete="postal-code" maxlength="10" placeholder="811-0125"></div>
-          <div class="field"><label for="cAddr" data-t="cAddr"></label><input type="text" id="cAddr" autocomplete="address-line1" maxlength="200"></div>
+          <div class="field"><label for="cZip"><span class="tag opt" data-t="opt"></span><span data-t="cZip"></span></label><input type="text" id="cZip" autocomplete="postal-code" maxlength="10" placeholder="811-0125"></div>
+          <div class="field"><label for="cAddr"><span class="tag opt" data-t="opt"></span><span data-t="cAddr"></span></label><input type="text" id="cAddr" autocomplete="address-line1" maxlength="200"></div>
         </div>
-        <div class="field"><label for="cNotes" data-t="cNotes"></label><textarea id="cNotes" maxlength="2000"></textarea></div>
+        <div class="field"><label for="cNotes"><span class="tag opt" data-t="opt"></span><span data-t="cNotes"></span></label><textarea id="cNotes" maxlength="2000"></textarea></div>
         <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label>Website<input type="text" id="hpWebsite" tabindex="-1" autocomplete="off"></label></div>
         <label class="check"><input type="checkbox" id="consent"><span id="consentText"></span></label>
         <div class="err" id="formErr" role="alert"></div>
@@ -295,6 +309,19 @@ dialog::backdrop{background:rgba(10,15,22,.55)}
     </aside>
   </div>
 </main>
+
+<footer class="site">
+  <div class="wrap cols">
+    <div>
+      <p class="en-big">Contact</p>
+      <p class="jp" data-t="ftJp"></p>
+      <a class="tel en" href="tel:092-985-9221">092-985-9221</a>
+      <address>〒811-0125 福岡県糟屋郡新宮町三代西1丁目1-7 エルヴェール新宮 1-B<br>TEL 092-985-9221 ／ FAX 092-510-7055</address>
+    </div>
+    <div><a class="pill" href="https://www.silfine.jp/contact.php" data-t="ftMail"></a></div>
+  </div>
+  <div class="copy" data-t="ftCopy"></div>
+</footer>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
   <div class="dlg-bar">
@@ -396,10 +423,10 @@ const T = {
     fPanels:"枚数", fKw:"システム容量", fWeight:"総重量", fArea:"設置面積",
     s4:"施工方法とオプション", s4h:"設置場所に対応した施工方法のみ表示しています。",
     installLbl:"施工方法", pcsLbl:"パワーコンディショナー（目安）を含める", batteryLbl:"蓄電池", prefLbl:"設置場所（都道府県）",
-    s5:"お客様情報", s5h:"お見積書の宛名になります。* は必須です。",
-    cCompany:"法人名", cName:"ご担当者名 *", cKana:"ふりがな", cEmail:"メールアドレス *", cTel:"電話番号",
+    s5:"お客様情報", s5h:"お見積書の宛名になります。",
+    cCompany:"法人名", cName:"ご担当者名", cKana:"ふりがな", cEmail:"メールアドレス", req:"必須", opt:"任意", backLink:"FINE-FLEX 製品ページへ", ftJp:"お問い合わせ", ftMail:"メールでのお問い合わせ", ftCopy:"© 2026 株式会社 SILFINE JAPAN（デモ）", cTel:"電話番号",
     cZip:"郵便番号", cAddr:"ご住所（市区町村以降）", cNotes:"ご質問・ご要望",
-    consent:'<a href="https://www.silfine.jp/contact.php" target="_blank" rel="noopener">個人情報保護方針</a>に同意します *',
+    consent:'<span class="tag req">必須</span> <a href="https://www.silfine.jp/contact.php" target="_blank" rel="noopener">個人情報保護方針</a>に同意します',
     estTotal:"概算お見積り（税込）", perKw:"kWあたり", save:"この内容で見積りを依頼する",
     fine:"表示金額は概算です。正式なお見積りは現地調査のうえご提示します。",
     lPanels:"パネル", lDisc:"数量割引", lInstall:"施工費", lSurvey:"現地調査・設計", lPcs:"パワコン（目安）",
@@ -436,10 +463,10 @@ const T = {
     fPanels:"Panels", fKw:"System size", fWeight:"Total weight", fArea:"Panel area",
     s4:"Installation and options", s4h:"Only methods suitable for your surface are shown.",
     installLbl:"Installation method", pcsLbl:"Include a power conditioner (estimate)", batteryLbl:"Battery", prefLbl:"Installation prefecture",
-    s5:"Your details", s5h:"These go on the quote. * is required.",
-    cCompany:"Company", cName:"Contact name *", cKana:"Name reading (furigana)", cEmail:"Email *", cTel:"Phone",
+    s5:"Your details", s5h:"These go on the quote.",
+    cCompany:"Company", cName:"Contact name", cKana:"Name reading (furigana)", cEmail:"Email", req:"Required", opt:"Optional", backLink:"FINE-FLEX product page", ftJp:"Get in touch", ftMail:"Contact us by email", ftCopy:"© 2026 SILFINE JAPAN Co., Ltd. (demo)", cTel:"Phone",
     cZip:"Postal code", cAddr:"Address (city and street)", cNotes:"Questions or requests",
-    consent:'I agree to the <a href="https://www.silfine.jp/contact.php" target="_blank" rel="noopener">privacy policy</a> *',
+    consent:'<span class="tag req">Required</span> I agree to the <a href="https://www.silfine.jp/contact.php" target="_blank" rel="noopener">privacy policy</a>',
     estTotal:"Estimated total (incl. tax)", perKw:"per kW", save:"Request this quote",
     fine:"This is an estimate. A formal quote follows a site survey.",
     lPanels:"Panels", lDisc:"Volume discount", lInstall:"Installation", lSurvey:"Site survey and design", lPcs:"Power conditioner (est.)",
