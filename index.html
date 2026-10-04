@@ -321,7 +321,7 @@ const EMAILJS_TEMPLATE = "template_70hb0h9";
 const EMAILJS_KEY      = "8gFZ1bCqDVNKv_AIx";
 const NOTIFY_EMAIL     = "sakura.reirei.momo@gmail.com";
 const EMAIL_FROM_NAME  = "FINE-FLEX 見積りシステム（デモ）";
-const ADMIN_URL        = "";   // filled in once the admin page is online
+const ADMIN_URL        = "https://reikayonetsu.github.io/fineflex-quote/admin.html";
 
 /* Fallback data (same as the database) used in offline demo mode */
 let PRODUCTS = [
@@ -739,7 +739,7 @@ function alertEmail(q){
       <div style="font-size:20px;font-weight:bold">新しい見積り依頼が届きました</div></div>
     <div style="${E.body}">
       <div style="${E.total}">${yen(q.total)}（税込） ／ ${(+q.system_kw).toFixed(2)} kW</div>
-      <p style="${E.small}">${esc(q.quote_no)} ／ ${q.created.slice(0,16).replace("T"," ")}（UTC）</p>
+      <p style="${E.small}">${esc(q.quote_no)} ／ ${new Date(q.created).toLocaleString("ja-JP",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})}（日本時間）</p>
       <h3 style="${E.h3}">お客様</h3>
       <table style="${E.table}">${rows.map(r => `<tr><td style="${E.td};color:#5B6675;width:35%">${r[0]}</td><td style="${E.td}">${r[1]}</td></tr>`).join("")}</table>
       <h3 style="${E.h3}">システム</h3>${summaryTable({...q, lang:"ja"}, TT)}
