@@ -268,6 +268,7 @@ dialog::backdrop{background:rgba(10,15,22,.55)}
           <div class="field"><label for="cAddr" data-t="cAddr"></label><input type="text" id="cAddr" autocomplete="address-line1" maxlength="200"></div>
         </div>
         <div class="field"><label for="cNotes" data-t="cNotes"></label><textarea id="cNotes" maxlength="2000"></textarea></div>
+        <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label>Website<input type="text" id="hpWebsite" tabindex="-1" autocomplete="off"></label></div>
         <label class="check"><input type="checkbox" id="consent"><span id="consentText"></span></label>
         <div class="err" id="formErr" role="alert"></div>
       </section>
@@ -408,7 +409,7 @@ const T = {
     savedH:"このブラウザで依頼した見積り", savedSub:"送信済みのお見積りはこの端末に控えが残ります。",
     thId:"見積番号", thDate:"依頼日", thModel:"モデル", thKw:"容量", thTotal:"合計（税込）",
     open:"開く", empty:"まだ見積り依頼はありません。",
-    errName:"ご担当者名を入力してください。", errEmail:"有効なメールアドレスを入力してください。", errConsent:"個人情報保護方針への同意が必要です。",
+    errName:"ご担当者名を入力してください。", errEmail:"有効なメールアドレスを入力してください。", errConsent:"個人情報保護方針への同意が必要です。", errWait:"送信が続いています。{n}秒ほどおいてから、もう一度お試しください。", errDaily:"本日の送信上限に達しました。お急ぎの場合はお電話（092-985-9221）でお問い合わせください。",
     sentOk:"送信しました。担当者よりご連絡いたします。", savedDemo:"デモモードのため送信されていません。",
     sendFail:"送信できませんでした。通信状況を確認して、もう一度お試しください。", mailSent:"確認メールを {e} に送信しました。", mailFail:"確認メールは送信できませんでした：{r}", mailBlocked:"メール機能を読み込めませんでした（広告ブロッカーが原因の可能性があります）",
     print:"印刷", download:"ダウンロード", close:"閉じる",
@@ -448,7 +449,7 @@ const T = {
     savedH:"Quotes requested from this browser", savedSub:"A copy of each quote you send stays on this device.",
     thId:"Quote no.", thDate:"Requested", thModel:"Model", thKw:"Size", thTotal:"Total (incl. tax)",
     open:"Open", empty:"No quote requests yet.",
-    errName:"Enter a contact name.", errEmail:"Enter a valid email address.", errConsent:"You need to agree to the privacy policy.",
+    errName:"Enter a contact name.", errEmail:"Enter a valid email address.", errConsent:"You need to agree to the privacy policy.", errWait:"You've just sent a request. Wait about {n} seconds and try again.", errDaily:"You've reached today's request limit. For urgent enquiries, call 092-985-9221.",
     sentOk:"Sent. SILFINE JAPAN will contact you.", savedDemo:"Demo mode: this quote was not sent.",
     sendFail:"The quote couldn't be sent. Check your connection and try again.", mailSent:"A confirmation email was sent to {e}.", mailFail:"The confirmation email couldn't be sent: {r}", mailBlocked:"The email service couldn't load (an ad blocker may be blocking it)",
     print:"Print", download:"Download", close:"Close",
@@ -774,12 +775,27 @@ function newQuoteNo(){
   return `SFQ-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
 }
 
+/* Abuse protection (the free email plan has no domain lock):
+   at most one request per 60 seconds and 5 per day from the same browser. */
+const LIMIT_GAP_MS = 60*1000, LIMIT_PER_DAY = 5, LIMIT_KEY = "silfine-send-log";
+function sendLog(){ try{ return JSON.parse(localStorage.getItem(LIMIT_KEY) || "[]"); }catch(e){ return []; } }
+function checkLimit(){
+  const now = Date.now(), log = sendLog().filter(ts => now - ts < 864e5);
+  const last = log[log.length-1];
+  if (last && now - last < LIMIT_GAP_MS) return t("errWait").replace("{n}", Math.ceil((LIMIT_GAP_MS - (now-last))/1000));
+  if (log.length >= LIMIT_PER_DAY) return t("errDaily");
+  return null;
+}
+function recordSend(){ try{ const now = Date.now(); const log = sendLog().filter(ts => now - ts < 864e5); log.push(now); localStorage.setItem(LIMIT_KEY, JSON.stringify(log)); }catch(e){} }
+
 async function submit(){
   const err = $("#formErr");
+  if ($("#hpWebsite").value) return;   // filled in by a bot: do nothing
   const name = $("#cName").value.trim(), email = $("#cEmail").value.trim();
   if (!name){ err.textContent = t("errName"); $("#cName").focus(); return; }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err.textContent = t("errEmail"); $("#cEmail").focus(); return; }
   if (!$("#consent").checked){ err.textContent = t("errConsent"); $("#consent").focus(); return; }
+  if (sb){ const lim = checkLimit(); if (lim){ err.textContent = lim; return; } }
   err.textContent = "";
 
   const c = calc(), now = new Date();
@@ -804,6 +820,7 @@ async function submit(){
     const { error } = await sb.from("quotes").insert(row);
     btn.disabled = false;
     if (error){ console.error(error); toast(t("sendFail")); return; }
+    recordSend();
     msg = t("sentOk");
   } else {
     btn.disabled = false;
