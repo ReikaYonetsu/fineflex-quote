@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>見積り管理 | SILFINE JAPAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --paper:#F5F6F3; --surface:#FFFFFF; --ink:#18222F; --muted:#5B6675; --line:#D9DED8;
+  --cell:#1B3A63; --cell-hi:#2C5C96; --sun:#E3A21A; --sun-ink:#4A3200;
+  --ok:#2E7D4F; --danger:#B3261E; --focus:#2C5C96;
+  --s-new:#2C5C96; --s-contacted:#8A6D1E; --s-quoted:#6B4FA0; --s-won:#2E7D4F; --s-lost:#7A818A;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#11161D; --surface:#19212B; --ink:#E7ECF1; --muted:#9AA6B4; --line:#2B3643;
+    --cell:#2C5C96; --cell-hi:#4A7FC0; --sun:#F0B43A; --sun-ink:#1E1400;
+    --ok:#5DBB86; --danger:#F08A82; --focus:#7FA9DD;
+    --s-new:#7FA9DD; --s-contacted:#E2BE5A; --s-quoted:#B59BE0; --s-won:#5DBB86; --s-lost:#9AA6B4;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11161D; --surface:#19212B; --ink:#E7ECF1; --muted:#9AA6B4; --line:#2B3643;
+  --cell:#2C5C96; --cell-hi:#4A7FC0; --sun:#F0B43A; --sun-ink:#1E1400;
+  --ok:#5DBB86; --danger:#F08A82; --focus:#7FA9DD;
+  --s-new:#7FA9DD; --s-contacted:#E2BE5A; --s-quoted:#B59BE0; --s-won:#5DBB86; --s-lost:#9AA6B4;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+a{color:var(--cell-hi)}
+input,select,textarea{padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;border:0;cursor:pointer;font-weight:700;background:var(--cell);color:#fff}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink);font-weight:500}
+.btn.danger{background:transparent;border:1.5px solid var(--danger);color:var(--danger);font-weight:500}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+.langs{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
+.langs button{border:0;background:none;padding:5px 12px;cursor:pointer;font-size:13px}
+.langs button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login form{width:100%;max-width:360px;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:28px}
+.login .lhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.login h1{font-size:22px;margin:0 0 4px}
+.login p{color:var(--muted);font-size:13px;margin:0 0 20px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:13px;font-weight:500}
+.err{color:var(--danger);font-size:13px;min-height:1.2em;margin:0 0 10px}
+
+/* app */
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:16px;min-height:58px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px}
+.brand small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;margin-right:auto}
+nav.tabs button{border:0;background:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:500;color:var(--muted)}
+nav.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink)}
+.who{font-size:13px;color:var(--muted)}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:24px 0 20px}
+@media (max-width:800px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);padding:14px 16px}
+.kpi span{display:block;font-size:12px;color:var(--muted)}
+.kpi b{font-size:24px;font-weight:900;line-height:1.3}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chips .c{opacity:.7;margin-left:4px}
+.toolbar input[type=search]{max-width:280px}
+.toolbar .spacer{margin-left:auto;display:flex;gap:8px}
+
+.table-wrap{overflow-x:auto;background:var(--surface);border:1.5px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:500;color:var(--muted);font-size:12.5px;background:var(--surface);position:sticky;top:0}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.row{cursor:pointer}
+tbody tr.row:hover{background:color-mix(in srgb,var(--cell-hi) 6%,transparent)}
+.r{text-align:right}
+.cust b{display:block;font-weight:500}
+.cust small{color:var(--muted)}
+.empty{padding:40px;text-align:center;color:var(--muted);white-space:normal}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.st-new{color:var(--s-new)} .st-contacted{color:var(--s-contacted)} .st-quoted{color:var(--s-quoted)} .st-won{color:var(--s-won)} .st-lost{color:var(--s-lost)}
+.foot{font-size:12px;color:var(--muted);margin:10px 0 40px}
+
+/* detail drawer */
+dialog{border:0;padding:0;margin:0 0 0 auto;height:100vh;max-height:100vh;width:min(560px,100vw);max-width:100vw;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(10,15,22,.45)}
+.drawer{display:flex;flex-direction:column;height:100%}
+.d-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start;padding-top:calc(18px + env(safe-area-inset-top,0px))}
+.d-head h2{margin:0;font-size:18px}
+.d-head small{color:var(--muted)}
+.d-head .btn{margin-left:auto}
+.d-body{padding:18px 22px;overflow:auto;flex:1}
+.d-sec{margin-bottom:22px}
+.d-sec h3{font-size:13px;color:var(--muted);font-weight:500;margin:0 0 8px}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:4px 12px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;word-break:break-word}
+.lines{width:100%;font-size:13.5px}
+.lines td{padding:5px 0;border:0;white-space:normal}
+.lines td:last-child{text-align:right;white-space:nowrap}
+.lines tr.t td{border-top:1px solid var(--line);font-weight:700;padding-top:8px}
+.d-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.d-foot .btn.danger{margin-left:auto}
+
+/* pricing */
+.grid2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;margin:24px 0 40px;align-items:start}
+@media (max-width:1000px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:10px}
+.card h2{font-size:16px;margin:0;padding:14px 16px;border-bottom:1px solid var(--line)}
+.card .body{padding:16px}
+.card table td input,.card table td select{padding:6px 8px;min-width:90px}
+.card table td input[type=checkbox]{width:18px;height:18px;min-width:0;accent-color:var(--cell-hi)}
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.set-grid .field{margin:0}
+.set-grid h4{grid-column:1/-1;margin:10px 0 0;font-size:13px;color:var(--muted);font-weight:500}
+.card .actions{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card .actions .msg{font-size:13px;color:var(--ok)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="loginView">
+  <form id="loginForm" novalidate>
+    <div class="lhead">
+      <h1 data-t="loginTitle"></h1>
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="ja" aria-pressed="true">日本語</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p data-t="loginSub"></p>
+    <div class="field"><label for="email" data-t="email"></label><input type="email" id="email" autocomplete="username" required></div>
+    <div class="field"><label for="password" data-t="password"></label><input type="password" id="password" autocomplete="current-password" required></div>
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="btn" type="submit" id="loginBtn" style="width:100%" data-t="login"></button>
+  </form>
+</div>
+
+<!-- APP -->
+<div id="appView" hidden>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand">SILFINE JAPAN<small data-t="brandSub"></small></div>
+      <nav class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="quotes" aria-selected="true" data-t="tabQuotes"></button>
+        <button type="button" role="tab" data-tab="pricing" aria-selected="false" data-t="tabPricing"></button>
+      </nav>
+      <span class="who" id="who"></span>
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="ja" aria-pressed="true">日本語</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <button type="button" class="btn ghost" id="logoutBtn" data-t="logout"></button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="quotesView">
+      <div class="kpis num" id="kpis"></div>
+      <div class="toolbar">
+        <div class="chips" id="chips"></div>
+        <input type="search" id="search">
+        <div class="spacer">
+          <button type="button" class="btn ghost" id="refreshBtn" data-t="refresh"></button>
+          <button type="button" class="btn ghost" id="csvBtn" data-t="csv"></button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="num">
+          <thead><tr>
+            <th data-t="thDate"></th><th data-t="thNo"></th><th data-t="thCust"></th><th data-t="thPref"></th><th data-t="thSurface"></th>
+            <th data-t="thModel"></th><th class="r" data-t="thKw"></th><th class="r" data-t="thTotal"></th><th data-t="thStatus"></th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p class="foot" id="foot"></p>
+    </section>
+
+    <section id="pricingView" hidden>
+      <div class="grid2">
+        <div class="card">
+          <h2 data-t="prodTitle"></h2>
+          <div style="overflow-x:auto">
+            <table class="num"><thead><tr><th data-t="pModel"></th><th class="r" data-t="pOut"></th><th data-t="pPrice"></th><th data-t="pStock"></th><th data-t="pShow"></th></tr></thead>
+              <tbody id="prodRows"></tbody></table>
+          </div>
+          <div class="actions"><button type="button" class="btn" id="saveProducts" data-t="saveProducts"></button><span class="msg" id="prodMsg"></span></div>
+        </div>
+        <div class="card">
+          <h2 data-t="setTitle"></h2>
+          <div class="body"><div class="set-grid num" id="setForm"></div></div>
+          <div class="actions"><button type="button" class="btn" id="saveSettings" data-t="saveSettings"></button><span class="msg" id="setMsg"></span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="drawer" aria-labelledby="dTitle">
+  <div class="drawer">
+    <div class="d-head">
+      <div><h2 id="dTitle" class="num"></h2><small id="dSub" class="num"></small></div>
+      <button type="button" class="btn ghost" id="dClose" data-t="close"></button>
+    </div>
+    <div class="d-body" id="dBody"></div>
+    <div class="d-foot">
+      <button type="button" class="btn" id="dSave" data-t="save"></button>
+      <button type="button" class="btn danger" id="dDelete" data-t="delete"></button>
+    </div>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const SUPABASE_URL = "https://secexjjpoeaafxxrocbg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_6TNOQ3ahUOogykGk6DJkzA_rYqjrPJj";
+
+/* ---------------- text ---------------- */
+const T = {
+  ja:{
+    title:"見積り管理", loginTitle:"見積り管理", loginSub:"SILFINE JAPAN スタッフ専用", email:"メールアドレス", password:"パスワード", login:"ログイン",
+    loginErr:"メールアドレスまたはパスワードが正しくありません。",
+    brandSub:"FINE-FLEX 見積り管理", tabQuotes:"見積り依頼", tabPricing:"価格設定", logout:"ログアウト",
+    kNew:"新規（未対応）", kMonth:"今月の依頼", kOpen:"商談中の見込み額", kOpenKw:"商談中の容量", kWon:"受注額",
+    all:"すべて", search:"会社名・氏名・メール・見積番号で検索", refresh:"更新", csv:"CSV出力",
+    thDate:"依頼日時", thNo:"見積番号", thCust:"お客様", thPref:"都道府県", thSurface:"設置場所", thModel:"モデル × 枚数", thKw:"容量", thTotal:"合計（税込）", thStatus:"ステータス",
+    noMatch:"条件に合う見積りはありません。", noQuotes:"まだ見積り依頼はありません。お客様が見積りを依頼すると、ここに表示されます。",
+    foot:"{a}件表示 ／ 全{b}件",
+    status:"ステータス", sCust:"お客様", sSystem:"システム", sLines:"お見積り内訳", sNotes:"社内メモ（お客様には表示されません）", notesPh:"対応履歴、次のアクションなど",
+    company:"法人名", contact:"ご担当者", mail:"メール", phone:"電話", address:"住所", req:"ご質問・ご要望", lang:"言語", langJa:"日本語", langEn:"英語",
+    surface:"設置場所", method:"施工方法", panel:"パネル", pcs:"パワコン", pcsYes:"含む", pcsNo:"含まない", battery:"蓄電池", gen:"年間発電量", savings:"年間削減額",
+    payback:"回収 約{n}年", pcsUnit:"枚", sub:"小計（税抜）", tax:"消費税", total:"合計（税込）",
+    close:"閉じる", save:"保存", delete:"削除", saved:"保存しました", saveFail:"保存できませんでした。", deleted:"削除しました", delFail:"削除できませんでした。",
+    confirmDel:"{n} を削除しますか？この操作は取り消せません。", loadFail:"見積りを読み込めませんでした。", refreshed:"最新の状態に更新しました",
+    mailSubject:"FINE-FLEX お見積り {n}",
+    prodTitle:"パネル価格・在庫", pModel:"型式", pOut:"出力", pPrice:"単価（税抜・円）", pStock:"在庫", pShow:"表示",
+    inStock:"国内在庫あり", toOrder:"受注生産", showAria:"見積りツールに表示",
+    saveProducts:"価格を保存", setTitle:"計算ルール", saveSettings:"ルールを保存", appliedMsg:"保存しました。見積りツールに反映されます。",
+    pricingFail:"価格設定を読み込めませんでした。",
+    gInstall:"施工費（円／kW）", gOther:"その他の費用（円）", gShip:"送料（50枚ごと・円）", gDisc:"数量割引（枚数以上 → 割引率%）", gAssume:"発電・削減額の前提",
+    fAdhesive:"接着工法", fFlat:"フラット架台", fGrip:"グリップ架台", fAdhMech:"接着＋機械固定", fSurvey:"現地調査・設計", fPcs:"パワコン（円／kW）",
+    fKyushu:"九州", fHonshu:"本州・四国", fRemote:"北海道・沖縄", fTierMin:"段階{n}：枚数", fTierRate:"段階{n}：割引率%",
+    fYield:"年間発電量（kWh／kW）", fElec:"電気料金（円／kWh）", fValid:"見積り有効期限（日）",
+    csvName:"見積り依頼"
+  },
+  en:{
+    title:"Quote admin", loginTitle:"Quote admin", loginSub:"SILFINE JAPAN staff only", email:"Email", password:"Password", login:"Log in",
+    loginErr:"The email or password is incorrect.",
+    brandSub:"FINE-FLEX quote admin", tabQuotes:"Quote requests", tabPricing:"Pricing", logout:"Log out",
+    kNew:"New (not handled)", kMonth:"Requests this month", kOpen:"Open pipeline value", kOpenKw:"Open pipeline size", kWon:"Won value",
+    all:"All", search:"Search company, name, email or quote no.", refresh:"Refresh", csv:"Export CSV",
+    thDate:"Requested", thNo:"Quote no.", thCust:"Customer", thPref:"Prefecture", thSurface:"Surface", thModel:"Model × qty", thKw:"Size", thTotal:"Total (incl. tax)", thStatus:"Status",
+    noMatch:"No quotes match these filters.", noQuotes:"No quote requests yet. They'll appear here when customers request a quote.",
+    foot:"Showing {a} of {b}",
+    status:"Status", sCust:"Customer", sSystem:"System", sLines:"Quote breakdown", sNotes:"Internal notes (never shown to customers)", notesPh:"Contact history, next steps",
+    company:"Company", contact:"Contact", mail:"Email", phone:"Phone", address:"Address", req:"Questions or requests", lang:"Language", langJa:"Japanese", langEn:"English",
+    surface:"Surface", method:"Method", panel:"Panels", pcs:"Power conditioner", pcsYes:"Included", pcsNo:"Not included", battery:"Battery", gen:"Yearly generation", savings:"Yearly savings",
+    payback:"payback about {n} years", pcsUnit:"pcs", sub:"Subtotal (excl. tax)", tax:"Consumption tax", total:"Total (incl. tax)",
+    close:"Close", save:"Save", delete:"Delete", saved:"Saved", saveFail:"Couldn't save. Try again.", deleted:"Deleted", delFail:"Couldn't delete. Try again.",
+    confirmDel:"Delete {n}? This can't be undone.", loadFail:"Couldn't load quotes.", refreshed:"Up to date",
+    mailSubject:"FINE-FLEX quote {n}",
+    prodTitle:"Panel prices and stock", pModel:"Model", pOut:"Output", pPrice:"Unit price (excl. tax, ¥)", pStock:"Stock", pShow:"Show",
+    inStock:"In stock in Japan", toOrder:"Made to order", showAria:"Show in quote tool",
+    saveProducts:"Save prices", setTitle:"Pricing rules", saveSettings:"Save rules", appliedMsg:"Saved. The quote tool now uses these values.",
+    pricingFail:"Couldn't load pricing.",
+    gInstall:"Installation (¥ per kW)", gOther:"Other costs (¥)", gShip:"Delivery (¥ per 50 panels)", gDisc:"Volume discounts (from qty → discount %)", gAssume:"Generation and savings assumptions",
+    fAdhesive:"Adhesive", fFlat:"Flat racking", fGrip:"Grip racking", fAdhMech:"Adhesive + mechanical", fSurvey:"Site survey and design", fPcs:"Power conditioner (¥ per kW)",
+    fKyushu:"Kyushu", fHonshu:"Honshu, Shikoku", fRemote:"Hokkaido, Okinawa", fTierMin:"Tier {n}: from qty", fTierRate:"Tier {n}: discount %",
+    fYield:"Yearly generation (kWh per kW)", fElec:"Electricity price (¥ per kWh)", fValid:"Quote validity (days)",
+    csvName:"quote-requests"
+  }
+};
+const STATUSES = { new:{ja:"新規",en:"New"}, contacted:{ja:"連絡済み",en:"Contacted"}, quoted:{ja:"正式見積り提出",en:"Formal quote sent"}, won:{ja:"受注",en:"Won"}, lost:{ja:"失注",en:"Lost"} };
+const SURFACES = { flat:{ja:"陸屋根",en:"Flat roof"}, folded:{ja:"折板・ハゼ屋根",en:"Folded metal roof"}, slate:{ja:"スレート屋根",en:"Slate roof"},
+  house:{ja:"住宅の屋根",en:"House roof"}, wall:{ja:"壁面",en:"Wall"}, vehicle:{ja:"カーポート・車両",en:"Carport or vehicle"} };
+const METHODS = { adhesive:{ja:"接着工法",en:"Adhesive"}, flat_rack:{ja:"フラット架台",en:"Flat racking"}, grip_rack:{ja:"グリップ架台",en:"Grip racking"},
+  adhesive_mech:{ja:"接着＋機械固定",en:"Adhesive + mechanical"}, none:{ja:"製品のみ",en:"Panels only"} };
+const BATTERIES = { none:{ja:"なし",en:"None"}, ep500:{ja:"EP500",en:"EP500"}, solax58:{ja:"SOLAX 5.8kWh",en:"SOLAX 5.8 kWh"}, solax115:{ja:"SOLAX 11.5kWh",en:"SOLAX 11.5 kWh"} };
+const LINES = { lPanels:{ja:"パネル",en:"Panels"}, lDisc:{ja:"数量割引",en:"Volume discount"}, lInstall:{ja:"施工費",en:"Installation"},
+  lSurvey:{ja:"現地調査・設計",en:"Site survey and design"}, lPcs:{ja:"パワコン（目安）",en:"Power conditioner (est.)"}, lBattery:{ja:"蓄電池",en:"Battery"}, lShip:{ja:"送料",en:"Delivery"} };
+const PREFS_JA = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+const PREFS_EN = ["Hokkaido","Aomori","Iwate","Miyagi","Akita","Yamagata","Fukushima","Ibaraki","Tochigi","Gunma","Saitama","Chiba","Tokyo","Kanagawa","Niigata","Toyama","Ishikawa","Fukui","Yamanashi","Nagano","Gifu","Shizuoka","Aichi","Mie","Shiga","Kyoto","Osaka","Hyogo","Nara","Wakayama","Tottori","Shimane","Okayama","Hiroshima","Yamaguchi","Tokushima","Kagawa","Ehime","Kochi","Fukuoka","Saga","Nagasaki","Kumamoto","Oita","Miyazaki","Kagoshima","Okinawa"];
+
+let LANG = "ja";
+try{ LANG = localStorage.getItem("silfine-admin-lang") || "ja"; }catch(e){}
+const t = (k, vars) => { let s = T[LANG][k] ?? k; if (vars) for (const v in vars) s = s.replace(`{${v}}`, vars[v]); return s; };
+const L = (map, id) => (map[id] ? map[id][LANG] : "—");
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const yen = n => "¥" + Math.round(+n || 0).toLocaleString("ja-JP");
+const dt = s => { const d = new Date(s); const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const pref = q => q.options && q.options.pref != null ? (LANG === "ja" ? PREFS_JA : PREFS_EN)[q.options.pref] : "—";
+function toast(m){ const el = $("#toast"); el.textContent = m; el.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("show"), 2600); }
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let QUOTES = [], PRODUCTS = [], SETTINGS = null, filter = "all", query = "", current = null;
+
+function applyText(){
+  document.documentElement.lang = LANG;
+  document.title = `${t("title")} | SILFINE JAPAN`;
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = t(el.dataset.t); });
+  document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === LANG));
+  $("#search").placeholder = t("search");
+}
+function setLang(l){
+  LANG = l; try{ localStorage.setItem("silfine-admin-lang", l); }catch(e){}
+  applyText();
+  if (!$("#appView").hidden){ renderQuotes(); if (SETTINGS) renderPricing(); if (current && $("#drawer").open) openDrawer(current.id); }
+}
+
+/* ---------------- auth ---------------- */
+async function boot(){
+  applyText();
+  const { data:{ session } } = await sb.auth.getSession();
+  session ? enter(session) : showLogin();
+}
+function showLogin(){ $("#appView").hidden = true; $("#loginView").hidden = false; }
+async function enter(session){
+  $("#loginView").hidden = true; $("#appView").hidden = false;
+  $("#who").textContent = session.user.email;
+  await loadQuotes();
+}
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("#loginBtn"), err = $("#loginErr");
+  err.textContent = ""; btn.disabled = true;
+  const { data, error } = await sb.auth.signInWithPassword({ email:$("#email").value.trim(), password:$("#password").value });
+  btn.disabled = false;
+  if (error){ err.textContent = t("loginErr"); return; }
+  $("#password").value = "";
+  enter(data.session);
+});
+$("#logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); QUOTES = []; SETTINGS = null; showLogin(); });
+
+/* ---------------- quotes ---------------- */
+async function loadQuotes(){
+  const { data, error } = await sb.from("quotes").select("*").order("created_at", { ascending:false }).limit(1000);
+  if (error){ toast(t("loadFail")); console.error(error); return; }
+  QUOTES = data; renderQuotes();
+}
+function visible(){
+  const q = query.toLowerCase();
+  return QUOTES.filter(r => (filter === "all" || r.status === filter) &&
+    (!q || [r.company, r.contact_name, r.furigana, r.email, r.quote_no, r.phone].some(v => (v || "").toLowerCase().includes(q))));
+}
+function renderQuotes(){
+  const open = QUOTES.filter(r => ["new","contacted","quoted"].includes(r.status));
+  const won = QUOTES.filter(r => r.status === "won");
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+  $("#kpis").innerHTML = `
+    <div class="kpi"><span>${t("kNew")}</span><b>${QUOTES.filter(r => r.status==="new").length}</b></div>
+    <div class="kpi"><span>${t("kMonth")}</span><b>${QUOTES.filter(r => new Date(r.created_at) >= monthStart).length}</b></div>
+    <div class="kpi"><span>${t("kOpen")}</span><b>${yen(open.reduce((a,r) => a + r.total, 0))}</b></div>
+    <div class="kpi"><span>${t("kOpenKw")}</span><b>${open.reduce((a,r) => a + +r.system_kw, 0).toFixed(1)} kW</b></div>
+    <div class="kpi"><span>${t("kWon")}</span><b>${yen(won.reduce((a,r) => a + r.total, 0))}</b></div>`;
+  const counts = s => s === "all" ? QUOTES.length : QUOTES.filter(r => r.status === s).length;
+  $("#chips").innerHTML = ["all", ...Object.keys(STATUSES)].map(s =>
+    `<button type="button" data-filter="${s}" aria-pressed="${filter===s}">${s==="all" ? t("all") : L(STATUSES, s)}<span class="c">${counts(s)}</span></button>`).join("");
+  const list = visible();
+  $("#rows").innerHTML = !list.length
+    ? `<tr><td colspan="9" class="empty">${QUOTES.length ? t("noMatch") : t("noQuotes")}</td></tr>`
+    : list.map(r => `<tr class="row" data-id="${r.id}">
+        <td>${dt(r.created_at)}</td><td>${esc(r.quote_no)}</td>
+        <td class="cust"><b>${esc(r.company || r.contact_name)}</b><small>${r.company ? esc(r.contact_name) : esc(r.email)}</small></td>
+        <td>${pref(r)}</td><td>${L(SURFACES, r.surface_type)}</td>
+        <td>${esc(r.model)} × ${r.panel_count}</td><td class="r">${(+r.system_kw).toFixed(2)} kW</td>
+        <td class="r">${yen(r.total)}</td><td><span class="status st-${r.status}">${L(STATUSES, r.status)}</span></td></tr>`).join("");
+  $("#foot").textContent = t("foot", {a:list.length, b:QUOTES.length});
+}
+
+function openDrawer(id){
+  const r = QUOTES.find(x => x.id === id); if (!r) return;
+  // keep unsaved edits when switching language
+  const keepStatus = current && current.id === id && $("#dStatus") ? $("#dStatus").value : r.status;
+  const keepNotes = current && current.id === id && $("#dNotes") ? $("#dNotes").value : (r.admin_notes || "");
+  current = r;
+  $("#dTitle").textContent = r.company || r.contact_name;
+  $("#dSub").textContent = `${r.quote_no} ／ ${dt(r.created_at)}`;
+  const o = r.options || {};
+  const lines = (r.lines || []).map(l => `<tr><td>${L(LINES, l.k)}${l.note ? `<br><small style="color:var(--muted)">${esc(l.note)}</small>` : ""}</td><td>${l.v < 0 ? "−" : ""}${yen(Math.abs(l.v))}</td></tr>`).join("");
+  $("#dBody").innerHTML = `
+    <div class="d-sec"><h3>${t("status")}</h3>
+      <select id="dStatus">${Object.keys(STATUSES).map(s => `<option value="${s}" ${s===keepStatus?"selected":""}>${L(STATUSES, s)}</option>`).join("")}</select></div>
+    <div class="d-sec"><h3>${t("sCust")}</h3><dl class="kv">
+      <dt>${t("company")}</dt><dd>${esc(r.company) || "—"}</dd>
+      <dt>${t("contact")}</dt><dd>${esc(r.contact_name)}${r.furigana ? `（${esc(r.furigana)}）` : ""}</dd>
+      <dt>${t("mail")}</dt><dd><a href="mailto:${esc(r.email)}?subject=${encodeURIComponent(t("mailSubject", {n:r.quote_no}))}">${esc(r.email)}</a></dd>
+      <dt>${t("phone")}</dt><dd>${r.phone ? `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : "—"}</dd>
+      <dt>${t("address")}</dt><dd>${r.postal_code ? `〒${esc(r.postal_code)} ` : ""}${esc(r.address) || "—"}</dd>
+      <dt>${t("req")}</dt><dd>${esc(r.notes) || "—"}</dd>
+      <dt>${t("lang")}</dt><dd>${r.lang === "en" ? t("langEn") : t("langJa")}</dd></dl></div>
+    <div class="d-sec"><h3>${t("sSystem")}</h3><dl class="kv num">
+      <dt>${t("surface")}</dt><dd>${L(SURFACES, r.surface_type)}（${pref(r)}）</dd>
+      <dt>${t("method")}</dt><dd>${L(METHODS, r.install_method)}</dd>
+      <dt>${t("panel")}</dt><dd>${esc(r.model)} × ${r.panel_count} ${t("pcsUnit")}（${(+r.system_kw).toFixed(2)} kW）</dd>
+      <dt>${t("pcs")}</dt><dd>${o.pcs ? t("pcsYes") : t("pcsNo")}</dd>
+      <dt>${t("battery")}</dt><dd>${L(BATTERIES, o.battery)}</dd>
+      <dt>${t("gen")}</dt><dd>${(r.annual_kwh || 0).toLocaleString()} kWh</dd>
+      <dt>${t("savings")}</dt><dd>${yen(r.annual_savings)}${o.payback ? `（${t("payback", {n:o.payback})}）` : ""}</dd></dl></div>
+    <div class="d-sec"><h3>${t("sLines")}</h3><table class="lines num">${lines}
+      <tr class="t"><td>${t("sub")}</td><td>${yen(r.subtotal)}</td></tr>
+      <tr><td>${t("tax")}</td><td>${yen(r.tax)}</td></tr>
+      <tr class="t"><td>${t("total")}</td><td>${yen(r.total)}</td></tr></table></div>
+    <div class="d-sec"><h3>${t("sNotes")}</h3>
+      <textarea id="dNotes" rows="4" placeholder="${esc(t("notesPh"))}">${esc(keepNotes)}</textarea></div>`;
+  if (!$("#drawer").open) $("#drawer").showModal();
+}
+async function saveCurrent(){
+  if (!current) return;
+  const patch = { status:$("#dStatus").value, admin_notes:$("#dNotes").value.trim() || null };
+  const btn = $("#dSave"); btn.disabled = true;
+  const { error } = await sb.from("quotes").update(patch).eq("id", current.id);
+  btn.disabled = false;
+  if (error){ toast(t("saveFail")); console.error(error); return; }
+  Object.assign(current, patch); renderQuotes(); $("#drawer").close(); current = null; toast(t("saved"));
+}
+async function deleteCurrent(){
+  if (!current || !confirm(t("confirmDel", {n:current.quote_no}))) return;
+  const { error } = await sb.from("quotes").delete().eq("id", current.id);
+  if (error){ toast(t("delFail")); console.error(error); return; }
+  QUOTES = QUOTES.filter(x => x.id !== current.id); renderQuotes(); $("#drawer").close(); current = null; toast(t("deleted"));
+}
+
+function exportCSV(){
+  const cols = [[t("thDate"),r=>dt(r.created_at)],[t("thNo"),r=>r.quote_no],[t("thStatus"),r=>L(STATUSES,r.status)],[t("company"),r=>r.company],
+    [t("contact"),r=>r.contact_name],["ふりがな / furigana",r=>r.furigana],[t("mail"),r=>r.email],[t("phone"),r=>r.phone],["〒",r=>r.postal_code],[t("address"),r=>r.address],
+    [t("surface"),r=>L(SURFACES,r.surface_type)],[t("method"),r=>L(METHODS,r.install_method)],[t("pModel"),r=>r.model],[t("panel"),r=>r.panel_count],
+    ["kW",r=>r.system_kw],[t("sub"),r=>r.subtotal],[t("tax"),r=>r.tax],[t("total"),r=>r.total],[t("gen")+" (kWh)",r=>r.annual_kwh],
+    [t("savings"),r=>r.annual_savings],[t("req"),r=>r.notes],[t("sNotes"),r=>r.admin_notes]];
+  const cell = v => { const s = String(v ?? ""); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+  const csv = [cols.map(c => cell(c[0])).join(","), ...visible().map(r => cols.map(c => cell(c[1](r))).join(","))].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8"}));
+  a.download = `fineflex-${t("csvName")}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------------- pricing ---------------- */
+async function loadPricing(){
+  const [p, s] = await Promise.all([
+    sb.from("products").select("*").order("sort"),
+    sb.from("settings").select("data").eq("id", 1).single()
+  ]);
+  if (p.error || s.error){ toast(t("pricingFail")); console.error(p.error || s.error); return; }
+  PRODUCTS = p.data; SETTINGS = s.data.data; renderPricing();
+}
+function renderPricing(){
+  // keep unsaved edits when re-rendering for a language switch
+  const edits = {};
+  document.querySelectorAll("#prodRows tr").forEach(tr => { edits[tr.dataset.pid] = {
+    price_jpy: tr.querySelector('[data-f="price_jpy"]').value, stock: tr.querySelector('[data-f="stock"]').value, active: tr.querySelector('[data-f="active"]').checked }; });
+  const setEdits = {}; document.querySelectorAll("#setForm [data-k]").forEach(i => setEdits[i.dataset.k] = i.value);
+
+  $("#prodRows").innerHTML = PRODUCTS.map(p => { const e = edits[p.id] || p; return `<tr data-pid="${esc(p.id)}">
+    <td>${esc(p.id)}</td><td class="r">${p.watts} W</td>
+    <td><input type="number" min="0" step="100" data-f="price_jpy" value="${esc(e.price_jpy)}"></td>
+    <td><select data-f="stock"><option value="stock" ${e.stock==="stock"?"selected":""}>${t("inStock")}</option><option value="order" ${e.stock==="order"?"selected":""}>${t("toOrder")}</option></select></td>
+    <td><input type="checkbox" data-f="active" ${e.active?"checked":""} aria-label="${esc(t("showAria"))}"></td></tr>`; }).join("");
+
+  const S = SETTINGS, f = (key, label, val, step="1") =>
+    `<div class="field"><label for="s_${key}">${label}</label><input type="number" id="s_${key}" data-k="${key}" step="${step}" value="${esc(setEdits[key] ?? val)}"></div>`;
+  const d = [...S.volume_discounts].sort((a,b) => a.min - b.min);
+  $("#setForm").innerHTML = `
+    <h4>${t("gInstall")}</h4>
+    ${f("install_per_kw.adhesive",t("fAdhesive"),S.install_per_kw.adhesive,"1000")}
+    ${f("install_per_kw.flat_rack",t("fFlat"),S.install_per_kw.flat_rack,"1000")}
+    ${f("install_per_kw.grip_rack",t("fGrip"),S.install_per_kw.grip_rack,"1000")}
+    ${f("install_per_kw.adhesive_mech",t("fAdhMech"),S.install_per_kw.adhesive_mech,"1000")}
+    <h4>${t("gOther")}</h4>
+    ${f("survey_fee",t("fSurvey"),S.survey_fee,"1000")}
+    ${f("pcs_per_kw",t("fPcs"),S.pcs_per_kw,"1000")}
+    <h4>${t("gShip")}</h4>
+    ${f("shipping_per_50.kyushu",t("fKyushu"),S.shipping_per_50.kyushu,"1000")}
+    ${f("shipping_per_50.honshu",t("fHonshu"),S.shipping_per_50.honshu,"1000")}
+    ${f("shipping_per_50.remote",t("fRemote"),S.shipping_per_50.remote,"1000")}
+    <h4>${t("gDisc")}</h4>
+    ${d.map((x,i) => f(`vd.${i}.min`,t("fTierMin",{n:i+1}),x.min) + f(`vd.${i}.rate`,t("fTierRate",{n:i+1}),Math.round(x.rate*100))).join("")}
+    <h4>${t("gAssume")}</h4>
+    ${f("yield_kwh_per_kw",t("fYield"),S.yield_kwh_per_kw,"10")}
+    ${f("electricity_yen_per_kwh",t("fElec"),S.electricity_yen_per_kwh,"0.5")}
+    ${f("valid_days",t("fValid"),S.valid_days)}`;
+}
+async function saveProducts(){
+  const rows = [...document.querySelectorAll("#prodRows tr")].map(tr => {
+    const g = f => tr.querySelector(`[data-f="${f}"]`);
+    return { id:tr.dataset.pid, price_jpy:Math.max(0, parseInt(g("price_jpy").value) || 0), stock:g("stock").value, active:g("active").checked };
+  });
+  const btn = $("#saveProducts"); btn.disabled = true;
+  const results = await Promise.all(rows.map(r => sb.from("products").update({price_jpy:r.price_jpy, stock:r.stock, active:r.active}).eq("id", r.id)));
+  btn.disabled = false;
+  const failed = results.find(r => r.error);
+  if (failed){ toast(t("saveFail")); console.error(failed.error); return; }
+  rows.forEach(r => Object.assign(PRODUCTS.find(p => p.id === r.id), r));
+  $("#prodMsg").textContent = t("appliedMsg");
+  setTimeout(() => $("#prodMsg").textContent = "", 4000);
+}
+async function saveSettings(){
+  const S = structuredClone(SETTINGS);
+  const vd = S.volume_discounts.slice().sort((a,b) => a.min - b.min).map(x => ({...x}));
+  document.querySelectorAll("#setForm [data-k]").forEach(inp => {
+    const v = parseFloat(inp.value); if (isNaN(v)) return;
+    const k = inp.dataset.k.split(".");
+    if (k[0] === "vd"){ vd[+k[1]][k[2]] = k[2] === "rate" ? v/100 : Math.round(v); }
+    else if (k.length === 2){ S[k[0]][k[1]] = v; }
+    else { S[k[0]] = v; }
+  });
+  S.volume_discounts = vd.sort((a,b) => b.min - a.min);
+  const btn = $("#saveSettings"); btn.disabled = true;
+  const { error } = await sb.from("settings").update({ data:S, updated_at:new Date().toISOString() }).eq("id", 1);
+  btn.disabled = false;
+  if (error){ toast(t("saveFail")); console.error(error); return; }
+  SETTINGS = S;
+  $("#setMsg").textContent = t("appliedMsg");
+  setTimeout(() => $("#setMsg").textContent = "", 4000);
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click", e => {
+  const b = e.target.closest("button, tr.row"); if (!b) return;
+  if (b.matches("tr.row")) openDrawer(b.dataset.id);
+  else if (b.dataset.lang) setLang(b.dataset.lang);
+  else if (b.dataset.filter){ filter = b.dataset.filter; renderQuotes(); }
+  else if (b.dataset.tab){
+    document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
+    $("#quotesView").hidden = b.dataset.tab !== "quotes"; $("#pricingView").hidden = b.dataset.tab !== "pricing";
+    if (b.dataset.tab === "pricing" && !SETTINGS) loadPricing();
+  }
+  else if (b.id === "refreshBtn") loadQuotes().then(() => toast(t("refreshed")));
+  else if (b.id === "csvBtn") exportCSV();
+  else if (b.id === "dClose"){ $("#drawer").close(); current = null; }
+  else if (b.id === "dSave") saveCurrent();
+  else if (b.id === "dDelete") deleteCurrent();
+  else if (b.id === "saveProducts") saveProducts();
+  else if (b.id === "saveSettings") saveSettings();
+});
+$("#drawer").addEventListener("close", () => { current = null; });
+$("#search").addEventListener("input", e => { query = e.target.value.trim(); renderQuotes(); });
+
+boot();
+</script>
+</body>
+</html>

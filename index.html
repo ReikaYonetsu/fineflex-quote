@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FINE-FLEX 自動お見積り | SILFINE JAPAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
+<style>
+:root{
+  --paper:#F5F6F3; --surface:#FFFFFF; --ink:#18222F; --muted:#5B6675; --line:#D9DED8;
+  --cell:#1B3A63; --cell-hi:#2C5C96; --busbar:#C9D3DD; --sun:#E3A21A; --sun-ink:#4A3200;
+  --ok:#2E7D4F; --danger:#B3261E; --focus:#2C5C96;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#11161D; --surface:#19212B; --ink:#E7ECF1; --muted:#9AA6B4; --line:#2B3643;
+    --cell:#2C5C96; --cell-hi:#4A7FC0; --busbar:#5F7085; --sun:#F0B43A; --sun-ink:#1E1400;
+    --ok:#5DBB86; --danger:#F08A82; --focus:#7FA9DD;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11161D; --surface:#19212B; --ink:#E7ECF1; --muted:#9AA6B4; --line:#2B3643;
+  --cell:#2C5C96; --cell-hi:#4A7FC0; --busbar:#5F7085; --sun:#F0B43A; --sun-ink:#1E1400;
+  --ok:#5DBB86; --danger:#F08A82; --focus:#7FA9DD;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+a{color:var(--cell-hi)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{border-bottom:1px solid var(--line);background:var(--surface)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px}
+.brand{font-weight:700;letter-spacing:.02em;font-size:15px}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:12px;letter-spacing:0}
+.langs{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.langs button{border:0;background:none;padding:6px 14px;cursor:pointer;font-size:14px}
+.langs button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+.intro{padding:40px 0 28px}
+.intro h1{font-size:clamp(28px,4.4vw,44px);line-height:1.2;margin:0 0 12px;font-weight:900;letter-spacing:-.01em}
+.intro p{margin:0;max-width:62ch;color:var(--muted)}
+.mode-note{display:inline-block;margin-top:16px;font-size:13px;padding:4px 10px;border-radius:6px;
+  background:color-mix(in srgb,var(--sun) 22%,transparent)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:32px;align-items:start;padding-bottom:64px}
+@media (max-width:960px){.layout{grid-template-columns:1fr}}
+
+section.step{padding:28px 0;border-top:1px solid var(--line)}
+section.step:first-child{border-top:0;padding-top:0}
+.step h2{font-size:20px;margin:0 0 4px;display:flex;gap:12px;align-items:baseline}
+.step h2 .n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;
+  background:var(--cell);color:#fff;font-size:14px;flex:none;transform:translateY(-2px)}
+.step .hint{margin:0 0 18px 40px;color:var(--muted);font-size:14px}
+@media (max-width:560px){.step .hint{margin-left:0}}
+
+.choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px}
+.choice{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);
+  border-radius:8px;background:var(--surface);cursor:pointer}
+.choice:has(input:checked){border-color:var(--cell-hi);box-shadow:0 0 0 3px color-mix(in srgb,var(--cell-hi) 20%,transparent)}
+.choice input{margin-top:5px;accent-color:var(--cell-hi)}
+.choice .t{font-weight:500;font-size:15px}
+.choice .d{font-size:12px;color:var(--muted);display:block;line-height:1.5}
+
+.panels{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.panel-card{position:relative;text-align:left;background:var(--surface);border:1.5px solid var(--line);
+  border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s}
+.panel-card:hover{border-color:var(--muted)}
+.panel-card[aria-checked="true"]{border-color:var(--cell-hi);box-shadow:0 0 0 3px color-mix(in srgb,var(--cell-hi) 25%,transparent)}
+.panel-art{height:84px;display:flex;align-items:center;justify-content:center;perspective:500px;margin-bottom:10px}
+.panel-art svg{max-height:84px;max-width:100%;transition:transform .5s cubic-bezier(.3,.7,.2,1);transform-origin:50% 100%}
+.panel-card[aria-checked="true"] .panel-art svg{transform:rotateX(28deg) scaleY(.92)}
+.panel-card.framed[aria-checked="true"] .panel-art svg{transform:none}
+@media (prefers-reduced-motion:reduce){.panel-art svg{transition:none}}
+.panel-card .model{font-weight:700;font-size:15px}
+.badges{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 8px;min-height:22px}
+.badge{font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.badge.rec{background:var(--sun);border-color:var(--sun);color:var(--sun-ink);font-weight:700}
+.badge.stock{border-color:var(--ok);color:var(--ok)}
+.panel-card dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:0;font-size:12.5px}
+.panel-card dt{color:var(--muted)}
+.panel-card dd{margin:0;text-align:right}
+.panel-card .price{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-weight:700;display:flex;justify-content:space-between;font-size:13.5px}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field label,.lbl{font-size:14px;font-weight:500}
+.field .sub{font-size:12px;color:var(--muted)}
+input[type=text],input[type=email],input[type=tel],input[type=number],select,textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface)}
+textarea{min-height:80px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:160px 1fr;gap:14px}
+@media (max-width:560px){.row2,.row3{grid-template-columns:1fr}}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.seg button{border:0;background:var(--surface);padding:8px 16px;cursor:pointer;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--cell);color:#fff}
+.stepper{display:flex;align-items:stretch;max-width:240px}
+.stepper button{width:44px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-size:20px}
+.stepper button:first-child{border-radius:8px 0 0 8px}
+.stepper button:last-child{border-radius:0 8px 8px 0}
+.stepper input{border-radius:0;border-left:0;border-right:0;text-align:center}
+.facts{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:6px;font-size:14px;color:var(--muted)}
+.facts b{color:var(--ink);font-weight:700}
+.check{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;cursor:pointer;font-size:15px}
+.check input{width:18px;height:18px;margin-top:4px;accent-color:var(--cell-hi);flex:none}
+.err{color:var(--danger);font-size:14px;min-height:1.2em}
+.note{font-size:13px;color:var(--muted);margin:-8px 0 16px}
+
+aside.summary{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));background:var(--surface);
+  border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+@media (max-width:960px){aside.summary{position:static}}
+.sum-head{background:var(--cell);color:#fff;padding:18px 20px;
+  background-image:linear-gradient(90deg,transparent 0 calc(50% - .5px),rgba(255,255,255,.12) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px)),
+  linear-gradient(0deg,transparent 0 calc(50% - .5px),rgba(255,255,255,.12) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px));
+  background-size:28px 28px}
+.sum-head .lbl{font-size:13px;opacity:.85;font-weight:400}
+.sum-head .total{font-size:36px;font-weight:900;line-height:1.15;letter-spacing:-.01em}
+.sum-head .per{font-size:13px;opacity:.85}
+.sum-body{padding:16px 20px 20px}
+.lines{width:100%;border-collapse:collapse;font-size:14px}
+.lines td{padding:6px 0;vertical-align:top}
+.lines td:last-child{text-align:right;white-space:nowrap;padding-left:12px}
+.lines .nt{display:block;font-size:12px;color:var(--muted)}
+.lines tr.sep td{border-top:1px solid var(--line);padding-top:10px}
+.lines tr.disc td:last-child{color:var(--ok)}
+.lines tr.grand td{font-weight:700;font-size:16px}
+.benefits{margin:14px 0;border-radius:8px;background:color-mix(in srgb,var(--sun) 16%,transparent);padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;font-size:12.5px}
+.benefits b{display:block;font-size:17px;line-height:1.3}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:8px;width:100%;padding:13px 18px;border-radius:8px;
+  border:0;cursor:pointer;font-weight:700;font-size:16px;background:var(--sun);color:var(--sun-ink)}
+.btn:hover{filter:brightness(1.05)}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink);font-weight:500;font-size:14px;padding:8px 14px;width:auto}
+.fine{font-size:12px;color:var(--muted);margin:10px 0 0}
+
+.saved{padding:28px 0 0;border-top:1px solid var(--line)}
+.table-wrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:10px;background:var(--surface)}
+table.list{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+table.list th,table.list td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+table.list th{font-weight:500;color:var(--muted);font-size:13px}
+table.list tr:last-child td{border-bottom:0}
+table.list .r{text-align:right}
+.empty{padding:28px;text-align:center;color:var(--muted);font-size:14px}
+.link{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;color:var(--cell-hi);font-size:14px}
+
+dialog{border:0;padding:0;border-radius:12px;max-width:min(840px,calc(100vw - 24px));width:100%;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(10,15,22,.55)}
+.dlg-bar{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+.dlg-msg{margin-right:auto;font-size:14px;color:var(--ok);font-weight:500}
+.sheet{padding:32px;max-height:75vh;overflow:auto;background:#fff}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;max-width:90vw}
+.toast.show{opacity:1}
+
+.q-doc{font-size:13px;color:#18222F;background:#fff;line-height:1.6}
+.q-doc h1{font-size:26px;letter-spacing:.3em;text-align:center;margin:0 0 20px;font-weight:700}
+.q-doc .q-meta{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:14px}
+.q-doc .q-to{font-size:16px;border-bottom:1px solid #18222F;padding-bottom:4px;min-width:240px}
+.q-doc .q-total{border:2px solid #18222F;padding:10px 14px;display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 0}
+.q-doc table{width:100%;border-collapse:collapse;margin-top:8px}
+.q-doc th,.q-doc td{border:1px solid #B8C0C9;padding:6px 8px;text-align:left;vertical-align:top}
+.q-doc th{background:#EEF1F4;font-weight:500}
+.q-doc td.r{text-align:right;white-space:nowrap}
+.q-doc .q-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+.q-doc .q-cols h3{font-size:13px;margin:0 0 4px}
+.q-doc .q-cols ul{margin:0;padding-left:18px}
+.q-doc .q-from{text-align:right;font-size:12px;margin-top:16px}
+.q-doc .q-notes{margin-top:12px;font-size:11.5px;color:#444;padding-left:18px}
+@media (max-width:560px){.sheet{padding:18px}.q-doc h1{font-size:20px}.q-doc .q-cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">SILFINE JAPAN<small data-t="brandSub"></small></div>
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" data-lang="ja" aria-pressed="true">日本語</button>
+      <button type="button" data-lang="en" aria-pressed="false">English</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="intro">
+    <h1 data-t="title"></h1>
+    <p data-t="lede"></p>
+    <span class="mode-note" id="modeNote"></span>
+  </div>
+
+  <div class="layout">
+    <div>
+      <section class="step" aria-labelledby="s1">
+        <h2 id="s1"><span class="n">1</span><span data-t="s1"></span></h2>
+        <p class="hint" data-t="s1h"></p>
+        <div class="choices" id="surfaces" role="radiogroup" aria-labelledby="s1"></div>
+      </section>
+
+      <section class="step" aria-labelledby="s2">
+        <h2 id="s2"><span class="n">2</span><span data-t="s2"></span></h2>
+        <p class="hint" data-t="s2h"></p>
+        <div class="panels" id="panels" role="radiogroup" aria-labelledby="s2"></div>
+      </section>
+
+      <section class="step" aria-labelledby="s3">
+        <h2 id="s3"><span class="n">3</span><span data-t="s3"></span></h2>
+        <p class="hint" data-t="s3h"></p>
+        <div class="seg" role="group">
+          <button type="button" data-mode="count" aria-pressed="true" data-t="byCount"></button>
+          <button type="button" data-mode="area" aria-pressed="false" data-t="byArea"></button>
+        </div>
+        <div class="field" id="countField">
+          <label for="count" data-t="countLbl"></label>
+          <div class="stepper">
+            <button type="button" id="minus" aria-label="−">−</button>
+            <input type="number" id="count" min="1" max="5000" value="24" class="num">
+            <button type="button" id="plus" aria-label="+">+</button>
+          </div>
+        </div>
+        <div class="field" id="areaField" hidden>
+          <label for="area" data-t="areaLbl"></label>
+          <input type="number" id="area" min="1" max="100000" value="100" class="num" style="max-width:240px">
+          <span class="sub" data-t="areaSub"></span>
+        </div>
+        <div class="facts" id="facts"></div>
+      </section>
+
+      <section class="step" aria-labelledby="s4">
+        <h2 id="s4"><span class="n">4</span><span data-t="s4"></span></h2>
+        <p class="hint" data-t="s4h"></p>
+        <div class="lbl" style="margin-bottom:8px" data-t="installLbl"></div>
+        <div class="choices" id="installs" role="radiogroup"></div>
+        <p class="note" id="surfaceNote" hidden></p>
+        <label class="check"><input type="checkbox" id="pcs" checked><span data-t="pcsLbl"></span></label>
+        <div class="row2">
+          <div class="field"><label for="battery" data-t="batteryLbl"></label><select id="battery"></select></div>
+          <div class="field"><label for="pref" data-t="prefLbl"></label><select id="pref"></select></div>
+        </div>
+      </section>
+
+      <section class="step" aria-labelledby="s5">
+        <h2 id="s5"><span class="n">5</span><span data-t="s5"></span></h2>
+        <p class="hint" data-t="s5h"></p>
+        <div class="field"><label for="cCompany" data-t="cCompany"></label><input type="text" id="cCompany" autocomplete="organization" maxlength="100"></div>
+        <div class="row2">
+          <div class="field"><label for="cName" data-t="cName"></label><input type="text" id="cName" autocomplete="name" maxlength="100"></div>
+          <div class="field"><label for="cKana" data-t="cKana"></label><input type="text" id="cKana" maxlength="100"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="cEmail" data-t="cEmail"></label><input type="email" id="cEmail" autocomplete="email" maxlength="200"></div>
+          <div class="field"><label for="cTel" data-t="cTel"></label><input type="tel" id="cTel" autocomplete="tel" maxlength="30"></div>
+        </div>
+        <div class="row3">
+          <div class="field"><label for="cZip" data-t="cZip"></label><input type="text" id="cZip" autocomplete="postal-code" maxlength="10" placeholder="811-0125"></div>
+          <div class="field"><label for="cAddr" data-t="cAddr"></label><input type="text" id="cAddr" autocomplete="address-line1" maxlength="200"></div>
+        </div>
+        <div class="field"><label for="cNotes" data-t="cNotes"></label><textarea id="cNotes" maxlength="2000"></textarea></div>
+        <label class="check"><input type="checkbox" id="consent"><span id="consentText"></span></label>
+        <div class="err" id="formErr" role="alert"></div>
+      </section>
+
+      <section class="saved" aria-labelledby="savedH">
+        <h2 id="savedH" style="font-size:20px;margin:0 0 4px" data-t="savedH"></h2>
+        <p class="fine" style="margin:0 0 12px" data-t="savedSub"></p>
+        <div class="table-wrap" id="savedList"></div>
+      </section>
+    </div>
+
+    <aside class="summary" aria-live="polite">
+      <div class="sum-head">
+        <div class="lbl" data-t="estTotal"></div>
+        <div class="total num" id="total">—</div>
+        <div class="per num" id="perKw"></div>
+      </div>
+      <div class="sum-body">
+        <table class="lines num" id="lines"></table>
+        <div class="benefits num" id="benefits"></div>
+        <button type="button" class="btn" id="saveBtn" data-t="save"></button>
+        <p class="fine" data-t="fine"></p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <div class="dlg-bar">
+    <span class="dlg-msg" id="dlgMsg"></span>
+    <span id="dlgTitle" class="num" style="font-weight:700"></span>
+    <button type="button" class="btn ghost" id="dlBtn" data-t="download"></button>
+    <button type="button" class="btn ghost" id="printBtn" data-t="print"></button>
+    <button type="button" class="btn ghost" id="closeBtn" data-t="close"></button>
+  </div>
+  <div class="sheet"><div id="sheet"></div></div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ==========================================================
+   CONNECTION — paste the Supabase publishable key below.
+   Without it, the page runs in offline demo mode.
+   ========================================================== */
+const SUPABASE_URL = "https://secexjjpoeaafxxrocbg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_6TNOQ3ahUOogykGk6DJkzA_rYqjrPJj";
+
+/* EMAIL — EmailJS settings. NOTIFY_EMAIL receives the "new request" alerts. */
+const EMAILJS_SERVICE  = "service_jpywgzm";
+const EMAILJS_TEMPLATE = "template_70hb0h9";
+const EMAILJS_KEY      = "8gFZ1bCqDVNKv_AIx";
+const NOTIFY_EMAIL     = "sakura.reirei.momo@gmail.com";
+const EMAIL_FROM_NAME  = "FINE-FLEX 見積りシステム（デモ）";
+const ADMIN_URL        = "";   // filled in once the admin page is online
+
+/* Fallback data (same as the database) used in offline demo mode */
+let PRODUCTS = [
+  {id:"SFJ-100-EWH",   watts:100, length_mm:1300, width_mm:420,  weight_kg:1.58, efficiency:18.31, panel_type:"flexible", stock:"order", price_jpy:14000},
+  {id:"SFJ-145-EWH",   watts:145, length_mm:1953, width_mm:401,  weight_kg:2.30, efficiency:18.50, panel_type:"flexible", stock:"order", price_jpy:19000},
+  {id:"SFJ-210-EWH",   watts:210, length_mm:1380, width_mm:790,  weight_kg:3.40, efficiency:19.26, panel_type:"flexible", stock:"order", price_jpy:24000},
+  {id:"SFJ-300-EWH",   watts:300, length_mm:1564, width_mm:994,  weight_kg:5.60, efficiency:19.30, panel_type:"flexible", stock:"stock", price_jpy:30000},
+  {id:"SFJ-305-EWH",   watts:305, length_mm:1945, width_mm:780,  weight_kg:5.50, efficiency:20.10, panel_type:"flexible", stock:"stock", price_jpy:30000},
+  {id:"SFJ-400-EWH",   watts:400, length_mm:1750, width_mm:1170, weight_kg:6.10, efficiency:19.54, panel_type:"flexible", stock:"stock", price_jpy:38000},
+  {id:"SFJ-400-EWH/F", watts:400, length_mm:1747, width_mm:1148, weight_kg:8.60, efficiency:19.90, panel_type:"framed",   stock:"stock", price_jpy:44000},
+  {id:"SFJ-520-EWH",   watts:520, length_mm:2246, width_mm:1185, weight_kg:9.30, efficiency:19.34, panel_type:"flexible", stock:"order", price_jpy:49000}
+];
+let SETTINGS = {
+  tax_rate:0.10, valid_days:30, yield_kwh_per_kw:1190, electricity_yen_per_kwh:24, glass_kg_per_m2:12.5,
+  survey_fee:30000, pcs_per_kw:35000,
+  install_per_kw:{adhesive:45000, flat_rack:60000, grip_rack:55000, adhesive_mech:50000, none:0},
+  volume_discounts:[{min:100,rate:.12},{min:50,rate:.08},{min:20,rate:.05}],
+  shipping_per_50:{kyushu:0, honshu:15000, remote:35000}
+};
+
+/* Installation surfaces → allowed methods and recommended model (from the FINE-FLEX brochure) */
+const SURFACES = [
+  {id:"flat",    model:"SFJ-400-EWH",   methods:["adhesive","flat_rack"],
+   ja:["陸屋根","ビル・工場・集合住宅のフラットな屋根"], en:["Flat roof","Buildings, factories, apartment blocks"]},
+  {id:"folded",  model:"SFJ-400-EWH/F", methods:["grip_rack","adhesive"],
+   ja:["折板・ハゼ屋根","金属製の工場・倉庫屋根"], en:["Folded metal roof","Metal factory and warehouse roofs"]},
+  {id:"slate",   model:"SFJ-305-EWH",   methods:["adhesive"],
+   ja:["スレート屋根","金属・非金属スレート（農業施設など）"], en:["Slate roof","Metal or non-metal slate (e.g. farm buildings)"]},
+  {id:"house",   model:"SFJ-400-EWH",   methods:["adhesive"],
+   ja:["住宅の屋根","シングル・コロニアル・ガルバリウム・瓦"], en:["House roof","Shingle, colonial, galvalume, tile"]},
+  {id:"wall",    model:"SFJ-305-EWH",   methods:["adhesive_mech","adhesive"],
+   ja:["壁面","ビル・店舗・住宅の外壁"], en:["Wall","Building, shop and house walls"]},
+  {id:"vehicle", model:"SFJ-305-EWH",   methods:["adhesive"],
+   ja:["カーポート・車両","カーポート、車両や移動式設備の天面"], en:["Carport or vehicle","Carports, vehicle and mobile unit roofs"]}
+];
+const METHODS = {
+  adhesive:      {ja:["接着工法（特許取得）","架台不要。施工保証10年付き"], en:["Adhesive (patented)","No racking. 10-year installation warranty"]},
+  flat_rack:     {ja:["フラット架台（特許取得）","パネル脱着可能。防水改修にも対応"], en:["Flat racking (patented)","Removable panels for roof maintenance"]},
+  grip_rack:     {ja:["グリップ架台","フレーム付きパネルを4〜6点で固定"], en:["Grip racking","Framed panels fixed at 4–6 points"]},
+  adhesive_mech: {ja:["接着＋機械固定","壁面向けの固定方法"], en:["Adhesive + mechanical","Recommended for walls"]},
+  none:          {ja:["製品のみ（施工なし）","施工業者さま向け"], en:["Panels only","For installers"]}
+};
+const SURFACE_NOTES = {
+  slate:{ja:"非金属スレート（アスベスト含有の可能性がある屋根を含む）は、塗膜形成後に接着します。費用は現地調査後にご案内します。",
+         en:"Non-metal slate (including roofs that may contain asbestos) is coated before bonding. Coating costs are quoted after the site survey."},
+  house:{ja:"瓦屋根は勾配4寸までが対象です。", en:"Tile roofs are supported up to a 4-sun (about 22°) pitch."}
+};
+/* Batteries sold by Silfine (sample prices) */
+const BATTERIES = [
+  {id:"none",     price:0,       ja:"なし", en:"None"},
+  {id:"ep500",    price:680000,  ja:"ポータブル電源 EP500（5.1kWh）", en:"EP500 portable power station (5.1 kWh)"},
+  {id:"solax58",  price:1200000, ja:"住宅用蓄電池 SOLAX 5.8kWh", en:"SOLAX home battery 5.8 kWh"},
+  {id:"solax115", price:1900000, ja:"住宅用蓄電池 SOLAX 11.5kWh", en:"SOLAX home battery 11.5 kWh"}
+];
+const PREFS_JA = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+const PREFS_EN = ["Hokkaido","Aomori","Iwate","Miyagi","Akita","Yamagata","Fukushima","Ibaraki","Tochigi","Gunma","Saitama","Chiba","Tokyo","Kanagawa","Niigata","Toyama","Ishikawa","Fukui","Yamanashi","Nagano","Gifu","Shizuoka","Aichi","Mie","Shiga","Kyoto","Osaka","Hyogo","Nara","Wakayama","Tottori","Shimane","Okayama","Hiroshima","Yamaguchi","Tokushima","Kagawa","Ehime","Kochi","Fukuoka","Saga","Nagasaki","Kumamoto","Oita","Miyazaki","Kagoshima","Okinawa"];
+const zoneOf = i => (i>=39 && i<=45) ? "kyushu" : (i===0 || i===46) ? "remote" : "honshu";
+
+const T = {
+  ja:{
+    brandSub:"FINE-FLEX フレキシブルソーラーパネル", title:"FINE-FLEX 自動お見積り",
+    lede:"設置場所を選ぶだけで、最適なパネルと施工方法をご提案。概算費用・年間の電気代削減額・回収年数がその場でわかります。",
+    modeLive:"お見積りはSILFINE JAPANに直接送信されます", modeDemo:"デモモード：価格はサンプル値です。お見積りは送信されません",
+    s1:"設置場所を選ぶ", s1h:"パネルを設置する場所に一番近いものを選んでください。",
+    s2:"パネルを選ぶ", s2h:"設置場所に合わせたおすすめモデルを選択済みです。変更もできます。",
+    rec:"おすすめ", inStock:"国内在庫あり", toOrder:"受注生産", framed:"フレーム付",
+    out:"出力", size:"サイズ", weight:"重さ", eff:"変換効率", perPanel:"1枚あたり",
+    s3:"システムの規模", s3h:"枚数を直接入力するか、設置できる面積から自動計算します。",
+    byCount:"枚数で指定", byArea:"面積から計算", countLbl:"パネル枚数", areaLbl:"設置可能な面積（m²）",
+    areaSub:"通路や端部の余白を見込み、面積の85%に配置する前提で計算します。",
+    fPanels:"枚数", fKw:"システム容量", fWeight:"総重量", fArea:"設置面積",
+    s4:"施工方法とオプション", s4h:"設置場所に対応した施工方法のみ表示しています。",
+    installLbl:"施工方法", pcsLbl:"パワーコンディショナー（目安）を含める", batteryLbl:"蓄電池", prefLbl:"設置場所（都道府県）",
+    s5:"お客様情報", s5h:"お見積書の宛名になります。* は必須です。",
+    cCompany:"法人名", cName:"ご担当者名 *", cKana:"ふりがな", cEmail:"メールアドレス *", cTel:"電話番号",
+    cZip:"郵便番号", cAddr:"ご住所（市区町村以降）", cNotes:"ご質問・ご要望",
+    consent:'<a href="https://www.silfine.jp/contact.php" target="_blank" rel="noopener">個人情報保護方針</a>に同意します *',
+    estTotal:"概算お見積り（税込）", perKw:"kWあたり", save:"この内容で見積りを依頼する",
+    fine:"表示金額は概算です。正式なお見積りは現地調査のうえご提示します。",
+    lPanels:"パネル", lDisc:"数量割引", lInstall:"施工費", lSurvey:"現地調査・設計", lPcs:"パワコン（目安）",
+    lBattery:"蓄電池", lShip:"送料", lSub:"小計（税抜）", lTax:"消費税（10%）", lGrand:"合計（税込）",
+    bGen:"年間発電量", bSave:"年間の電気代削減", bPayback:"投資回収", bLighter:"ガラス製パネル比",
+    years:"約{n}年", lighter:"{n}kg 軽量", kwhY:"kWh",
+    savedH:"このブラウザで依頼した見積り", savedSub:"送信済みのお見積りはこの端末に控えが残ります。",
+    thId:"見積番号", thDate:"依頼日", thModel:"モデル", thKw:"容量", thTotal:"合計（税込）",
+    open:"開く", empty:"まだ見積り依頼はありません。",
+    errName:"ご担当者名を入力してください。", errEmail:"有効なメールアドレスを入力してください。", errConsent:"個人情報保護方針への同意が必要です。",
+    sentOk:"送信しました。担当者よりご連絡いたします。", savedDemo:"デモモードのため送信されていません。",
+    sendFail:"送信できませんでした。通信状況を確認して、もう一度お試しください。", mailSent:"確認メールを {e} に送信しました。", mailFail:"確認メールは送信できませんでした：{r}", mailBlocked:"メール機能を読み込めませんでした（広告ブロッカーが原因の可能性があります）",
+    print:"印刷", download:"ダウンロード", close:"閉じる",
+    qTitle:"御 見 積 書", qTo:"様", qNo:"見積番号", qDate:"発行日", qValid:"有効期限",
+    qLead:"下記のとおりお見積り申し上げます。", qAmount:"お見積金額（税込）",
+    qItem:"品名・内容", qQty:"数量", qUnit:"単価", qAmt:"金額",
+    qSystem:"システム概要", qWarranty:"FINE-FLEX 保証内容",
+    qW:["製品保証 20年（第三者保険付き）","出力保証 25年","施工保証 10年（接着工法・認定施工業者による施工）","生産物賠償責任保険 10年"],
+    qS:{surface:"設置場所", method:"施工方法", model:"パネル", kw:"容量", gen:"年間発電量（目安）", save:"年間削減額（目安）", pay:"投資回収（目安）", pref:"設置都道府県"},
+    qNotes:["本見積りは自動計算による概算です。正式なお見積りは現地調査後にご提示します。","発電量・削減額は年間1,190kWh/kW、電気料金24円/kWhを前提とした目安です。","保証の適用条件はSILFINE JAPAN発行の保証書に準じます。"],
+    unitPcs:"枚", unitSet:"式", unitKw:"kW"
+  },
+  en:{
+    brandSub:"FINE-FLEX flexible solar panels", title:"FINE-FLEX instant quote",
+    lede:"Choose where the panels go and we'll suggest the right panel and installation method, with the estimated cost, yearly electricity savings and payback period.",
+    modeLive:"Quote requests go directly to SILFINE JAPAN", modeDemo:"Demo mode: prices are samples and quotes aren't sent",
+    s1:"Choose the installation surface", s1h:"Pick the option closest to where the panels will go.",
+    s2:"Choose a panel", s2h:"The recommended model for your surface is already selected. You can change it.",
+    rec:"Recommended", inStock:"In stock in Japan", toOrder:"Made to order", framed:"Framed",
+    out:"Output", size:"Size", weight:"Weight", eff:"Efficiency", perPanel:"Per panel",
+    s3:"Size the system", s3h:"Enter a panel count, or calculate it from the area you have.",
+    byCount:"By panel count", byArea:"From area", countLbl:"Number of panels", areaLbl:"Available area (m²)",
+    areaSub:"Assumes panels cover 85% of the area, leaving room for walkways and edges.",
+    fPanels:"Panels", fKw:"System size", fWeight:"Total weight", fArea:"Panel area",
+    s4:"Installation and options", s4h:"Only methods suitable for your surface are shown.",
+    installLbl:"Installation method", pcsLbl:"Include a power conditioner (estimate)", batteryLbl:"Battery", prefLbl:"Installation prefecture",
+    s5:"Your details", s5h:"These go on the quote. * is required.",
+    cCompany:"Company", cName:"Contact name *", cKana:"Name reading (furigana)", cEmail:"Email *", cTel:"Phone",
+    cZip:"Postal code", cAddr:"Address (city and street)", cNotes:"Questions or requests",
+    consent:'I agree to the <a href="https://www.silfine.jp/contact.php" target="_blank" rel="noopener">privacy policy</a> *',
+    estTotal:"Estimated total (incl. tax)", perKw:"per kW", save:"Request this quote",
+    fine:"This is an estimate. A formal quote follows a site survey.",
+    lPanels:"Panels", lDisc:"Volume discount", lInstall:"Installation", lSurvey:"Site survey and design", lPcs:"Power conditioner (est.)",
+    lBattery:"Battery", lShip:"Delivery", lSub:"Subtotal (excl. tax)", lTax:"Consumption tax (10%)", lGrand:"Total (incl. tax)",
+    bGen:"Yearly generation", bSave:"Yearly savings", bPayback:"Payback", bLighter:"vs glass panels",
+    years:"About {n} years", lighter:"{n} kg lighter", kwhY:"kWh",
+    savedH:"Quotes requested from this browser", savedSub:"A copy of each quote you send stays on this device.",
+    thId:"Quote no.", thDate:"Requested", thModel:"Model", thKw:"Size", thTotal:"Total (incl. tax)",
+    open:"Open", empty:"No quote requests yet.",
+    errName:"Enter a contact name.", errEmail:"Enter a valid email address.", errConsent:"You need to agree to the privacy policy.",
+    sentOk:"Sent. SILFINE JAPAN will contact you.", savedDemo:"Demo mode: this quote was not sent.",
+    sendFail:"The quote couldn't be sent. Check your connection and try again.", mailSent:"A confirmation email was sent to {e}.", mailFail:"The confirmation email couldn't be sent: {r}", mailBlocked:"The email service couldn't load (an ad blocker may be blocking it)",
+    print:"Print", download:"Download", close:"Close",
+    qTitle:"QUOTATION", qTo:"", qNo:"Quote no.", qDate:"Issued", qValid:"Valid until",
+    qLead:"We are pleased to quote as follows.", qAmount:"Quoted amount (incl. tax)",
+    qItem:"Item", qQty:"Qty", qUnit:"Unit price", qAmt:"Amount",
+    qSystem:"System overview", qWarranty:"FINE-FLEX warranties",
+    qW:["20-year product warranty (with third-party insurance)","25-year output warranty","10-year installation warranty (adhesive method, certified installer)","10-year product liability insurance"],
+    qS:{surface:"Surface", method:"Method", model:"Panel", kw:"System size", gen:"Yearly generation (est.)", save:"Yearly savings (est.)", pay:"Payback (est.)", pref:"Prefecture"},
+    qNotes:["This is an automatically calculated estimate. A formal quote follows a site survey.","Generation and savings assume 1,190 kWh/kW per year and ¥24/kWh electricity.","Warranty terms follow the warranty certificate issued by SILFINE JAPAN."],
+    unitPcs:"pcs", unitSet:"set", unitKw:"kW"
+  }
+};
+
+/* ---------------- state ---------------- */
+const $ = s => document.querySelector(s);
+const state = { lang:"ja", surface:"flat", model:"SFJ-400-EWH", mode:"count", count:24, area:100,
+  install:"adhesive", pcs:true, battery:"none", pref:39 };
+const t = k => T[state.lang][k];
+const L = o => o[state.lang];
+const yen = n => "¥" + Math.round(n).toLocaleString("ja-JP");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (s, n) => s.replace("{n}", n);
+let sb = null; // Supabase client when connected
+
+const product = id => PRODUCTS.find(p => p.id === id) || PRODUCTS[0];
+const surface = id => SURFACES.find(s => s.id === id);
+const areaM2 = p => p.length_mm * p.width_mm / 1e6;
+
+/* ---------------- calculation ---------------- */
+function calc(){
+  const p = product(state.model), S = SETTINGS;
+  const n = state.mode === "count"
+    ? Math.max(1, Math.min(5000, Math.floor(state.count) || 1))
+    : Math.max(1, Math.min(5000, Math.floor((state.area * 0.85) / areaM2(p))));
+  const kw = n * p.watts / 1000;
+  const lines = [];
+  const panelsCost = n * p.price_jpy;
+  lines.push({k:"lPanels", note:`${p.id} × ${n}`, v:panelsCost, qty:n, unit:"unitPcs", up:p.price_jpy});
+  const disc = [...S.volume_discounts].sort((a,b) => b.min - a.min).find(d => n >= d.min);
+  if (disc) lines.push({k:"lDisc", note:`${Math.round(disc.rate*100)}%`, v:-Math.round(panelsCost*disc.rate)});
+  const perKw = S.install_per_kw[state.install] || 0;
+  if (state.install !== "none"){
+    lines.push({k:"lInstall", note:L(METHODS[state.install])[0], v:Math.round(perKw*kw), qty:+kw.toFixed(2), unit:"unitKw", up:perKw});
+    lines.push({k:"lSurvey", v:S.survey_fee, qty:1, unit:"unitSet", up:S.survey_fee});
+  }
+  if (state.pcs) lines.push({k:"lPcs", v:Math.round(S.pcs_per_kw*kw), qty:+kw.toFixed(2), unit:"unitKw", up:S.pcs_per_kw});
+  const bat = BATTERIES.find(b => b.id === state.battery);
+  if (bat.price) lines.push({k:"lBattery", note:L(bat), v:bat.price, qty:1, unit:"unitSet", up:bat.price});
+  const zone = zoneOf(state.pref);
+  const ship = (S.shipping_per_50[zone] || 0) * Math.ceil(n/50);
+  lines.push({k:"lShip", note:(state.lang==="ja"?PREFS_JA:PREFS_EN)[state.pref], v:ship, qty:1, unit:"unitSet", up:ship});
+  const sub = lines.reduce((a,l) => a + l.v, 0);
+  const tax = Math.round(sub * S.tax_rate);
+  const total = sub + tax;
+  const gen = Math.round(kw * S.yield_kwh_per_kw);
+  const savings = Math.round(gen * S.electricity_yen_per_kwh);
+  const panelArea = n * areaM2(p);
+  const weight = n * p.weight_kg;
+  const glass = panelArea * S.glass_kg_per_m2;
+  return { p, n, kw, lines, sub, tax, total, gen, savings,
+    payback: savings > 0 ? total / savings : null,
+    panelArea, weight, lighter: Math.max(0, glass - weight) };
+}
+
+/* ---------------- rendering ---------------- */
+function panelSVG(p){
+  const framed = p.panel_type === "framed";
+  const W = 170, H = Math.round(W * p.width_mm / p.length_mm);
+  const cols = Math.max(4, Math.round(p.length_mm / 182 / 2)), rows = Math.max(2, Math.round(p.width_mm / 182));
+  const pad = framed ? 7 : 4, cw = (W - pad*2) / cols, ch = (H - pad*2) / rows;
+  let cells = "";
+  for (let r=0; r<rows; r++) for (let c=0; c<cols; c++){
+    cells += `<rect x="${pad+c*cw+.7}" y="${pad+r*ch+.7}" width="${cw-1.4}" height="${ch-1.4}" rx="1" fill="var(--cell)"/>`;
+  }
+  cells += `<line x1="${W/2}" y1="${pad}" x2="${W/2}" y2="${H-pad}" stroke="var(--busbar)" stroke-width=".8" opacity=".8"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
+    <rect x="${framed?1.5:.5}" y="${framed?1.5:.5}" width="${W-(framed?3:1)}" height="${H-(framed?3:1)}" rx="${framed?2:4}"
+      fill="${framed?"var(--busbar)":"var(--cell-hi)"}" opacity="${framed?1:.35}" stroke="${framed?"var(--muted)":"var(--line)"}" stroke-width="${framed?3:1}"/>${cells}</svg>`;
+}
+
+function renderSurfaces(){
+  $("#surfaces").innerHTML = SURFACES.map(s => `
+    <label class="choice"><input type="radio" name="surface" value="${s.id}" ${s.id===state.surface?"checked":""}>
+      <span><span class="t">${L(s)[0]}</span><span class="d">${L(s)[1]}</span></span></label>`).join("");
+}
+
+function renderPanels(){
+  const rec = surface(state.surface).model;
+  $("#panels").innerHTML = PRODUCTS.map(p => `
+    <button type="button" class="panel-card ${p.panel_type==="framed"?"framed":""}" role="radio" aria-checked="${p.id===state.model}" data-model="${p.id}">
+      <div class="panel-art">${panelSVG(p)}</div>
+      <div class="model">${p.id}</div>
+      <div class="badges">
+        ${p.id===rec?`<span class="badge rec">${t("rec")}</span>`:""}
+        <span class="badge ${p.stock==="stock"?"stock":""}">${p.stock==="stock"?t("inStock"):t("toOrder")}</span>
+        ${p.panel_type==="framed"?`<span class="badge">${t("framed")}</span>`:""}
+      </div>
+      <dl class="num">
+        <dt>${t("out")}</dt><dd>${p.watts} W</dd>
+        <dt>${t("size")}</dt><dd>${p.length_mm}×${p.width_mm}</dd>
+        <dt>${t("weight")}</dt><dd>${(+p.weight_kg).toFixed(1)} kg</dd>
+        <dt>${t("eff")}</dt><dd>${(+p.efficiency).toFixed(2)}%</dd>
+      </dl>
+      <div class="price num"><span>${t("perPanel")}</span><span>${yen(p.price_jpy)}</span></div>
+    </button>`).join("");
+}
+
+function renderInstalls(){
+  const s = surface(state.surface);
+  const allowed = [...s.methods, "none"];
+  if (!allowed.includes(state.install)) state.install = allowed[0];
+  $("#installs").innerHTML = allowed.map(id => `
+    <label class="choice"><input type="radio" name="install" value="${id}" ${id===state.install?"checked":""}>
+      <span><span class="t">${L(METHODS[id])[0]}</span><span class="d">${L(METHODS[id])[1]}${SETTINGS.install_per_kw[id]?`<br>${yen(SETTINGS.install_per_kw[id])}/kW`:""}</span></span></label>`).join("");
+  const note = SURFACE_NOTES[state.surface];
+  $("#surfaceNote").hidden = !note;
+  if (note) $("#surfaceNote").textContent = L(note);
+}
+
+function renderSelects(){
+  $("#battery").innerHTML = BATTERIES.map(b => `<option value="${b.id}" ${b.id===state.battery?"selected":""}>${L(b)}${b.price?` (${yen(b.price)})`:""}</option>`).join("");
+  const names = state.lang==="ja" ? PREFS_JA : PREFS_EN;
+  $("#pref").innerHTML = names.map((n,i) => `<option value="${i}" ${i===state.pref?"selected":""}>${n}</option>`).join("");
+}
+
+function renderSummary(){
+  const q = calc();
+  $("#facts").innerHTML = `
+    <span>${t("fPanels")} <b class="num">${q.n}</b></span>
+    <span>${t("fKw")} <b class="num">${q.kw.toFixed(2)} kW</b></span>
+    <span>${t("fArea")} <b class="num">${q.panelArea.toFixed(1)} m²</b></span>
+    <span>${t("fWeight")} <b class="num">${Math.round(q.weight).toLocaleString()} kg</b></span>`;
+  $("#lines").innerHTML = q.lines.map(l => `<tr class="${l.v<0?"disc":""}"><td>${t(l.k)}${l.note?`<span class="nt">${esc(l.note)}</span>`:""}</td><td>${l.v<0?"−":""}${yen(Math.abs(l.v))}</td></tr>`).join("") +
+    `<tr class="sep"><td>${t("lSub")}</td><td>${yen(q.sub)}</td></tr>
+     <tr><td>${t("lTax")}</td><td>${yen(q.tax)}</td></tr>
+     <tr class="grand"><td>${t("lGrand")}</td><td>${yen(q.total)}</td></tr>`;
+  $("#total").textContent = yen(q.total);
+  $("#perKw").textContent = `${q.kw.toFixed(2)} kW ／ ${yen(q.total/q.kw)} ${t("perKw")}`;
+  $("#benefits").innerHTML = `
+    <div>${t("bGen")}<b>${q.gen.toLocaleString()} ${t("kwhY")}</b></div>
+    <div>${t("bSave")}<b>${yen(q.savings)}</b></div>
+    <div>${t("bPayback")}<b>${q.payback ? fmt(t("years"), q.payback.toFixed(1)) : "—"}</b></div>
+    <div>${t("bLighter")}<b>${fmt(t("lighter"), Math.round(q.lighter).toLocaleString())}</b></div>`;
+}
+
+function renderText(){
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = t(el.dataset.t); });
+  $("#consentText").innerHTML = t("consent");
+  $("#modeNote").textContent = sb ? t("modeLive") : t("modeDemo");
+  document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang===state.lang));
+  document.title = `${t("title")} | SILFINE JAPAN`;
+}
+
+function renderAll(){ renderText(); renderSurfaces(); renderPanels(); renderInstalls(); renderSelects(); renderSummary(); renderSaved(); }
+
+/* ---------------- local copies of sent quotes ---------------- */
+const LKEY = "silfine-quotes-v2";
+const local = {
+  list(){ try{ return JSON.parse(localStorage.getItem(LKEY) || "[]"); }catch(e){ return []; } },
+  add(q){ try{ const l = this.list(); l.unshift(q); localStorage.setItem(LKEY, JSON.stringify(l.slice(0,50))); }catch(e){} }
+};
+
+function renderSaved(){
+  const list = local.list();
+  $("#savedList").innerHTML = !list.length ? `<div class="empty">${t("empty")}</div>` :
+    `<table class="list num"><thead><tr><th>${t("thId")}</th><th>${t("thDate")}</th><th>${t("thModel")}</th><th class="r">${t("thKw")}</th><th class="r">${t("thTotal")}</th><th></th></tr></thead><tbody>
+    ${list.map(q => `<tr><td>${esc(q.quote_no)}</td><td>${q.created.slice(0,10)}</td><td>${esc(q.model)} × ${q.panel_count}</td>
+      <td class="r">${(+q.system_kw).toFixed(2)} kW</td><td class="r">${yen(q.total)}</td>
+      <td><button type="button" class="link" data-open="${esc(q.quote_no)}">${t("open")}</button></td></tr>`).join("")}</tbody></table>`;
+}
+
+/* ---------------- quote document ---------------- */
+function quoteDoc(q){
+  const TT = T[q.lang], S = TT.qS;
+  const items = q.lines.map(l => `<tr><td>${TT[l.k]}${l.note?`<br><small>${esc(l.note)}</small>`:""}</td>
+    <td class="r">${l.qty!=null?`${l.qty} ${TT[l.unit]}`:""}</td><td class="r">${l.up!=null?yen(l.up):""}</td>
+    <td class="r">${l.v<0?"−":""}${yen(Math.abs(l.v))}</td></tr>`).join("");
+  const to = esc(q.company ? `${q.company}　${q.contact_name}` : q.contact_name);
+  const sf = SURFACES.find(s => s.id === q.surface_type), md = METHODS[q.install_method];
+  return `<div class="q-doc">
+    <h1>${TT.qTitle}</h1>
+    <div class="q-meta">
+      <div><div class="q-to">${to} ${TT.qTo}</div><p>${TT.qLead}</p></div>
+      <div class="num">${TT.qNo}: ${esc(q.quote_no)}<br>${TT.qDate}: ${q.created.slice(0,10)}<br>${TT.qValid}: ${q.valid}</div>
+    </div>
+    <div class="q-total num"><span>${TT.qAmount}</span><span>${yen(q.total)}</span></div>
+    <table class="num"><thead><tr><th>${TT.qItem}</th><th>${TT.qQty}</th><th>${TT.qUnit}</th><th>${TT.qAmt}</th></tr></thead>
+      <tbody>${items}
+        <tr><td colspan="3" class="r">${TT.lSub}</td><td class="r">${yen(q.subtotal)}</td></tr>
+        <tr><td colspan="3" class="r">${TT.lTax}</td><td class="r">${yen(q.tax)}</td></tr>
+        <tr><td colspan="3" class="r"><b>${TT.lGrand}</b></td><td class="r"><b>${yen(q.total)}</b></td></tr>
+      </tbody></table>
+    <div class="q-cols num">
+      <div><h3>${TT.qSystem}</h3><ul>
+        <li>${S.surface}: ${sf ? sf[q.lang][0] : "—"}</li>
+        <li>${S.method}: ${md ? md[q.lang][0] : "—"}</li>
+        <li>${S.model}: ${esc(q.model)} × ${q.panel_count}</li>
+        <li>${S.kw}: ${(+q.system_kw).toFixed(2)} kW</li>
+        <li>${S.pref}: ${(q.lang==="ja"?PREFS_JA:PREFS_EN)[q.options.pref] ?? "—"}</li>
+        <li>${S.gen}: ${q.annual_kwh.toLocaleString()} kWh</li>
+        <li>${S.save}: ${yen(q.annual_savings)}</li>
+        <li>${S.pay}: ${q.options.payback ? fmt(TT.years, q.options.payback) : "—"}</li>
+      </ul></div>
+      <div><h3>${TT.qWarranty}</h3><ul>${TT.qW.map(w => `<li>${w}</li>`).join("")}</ul></div>
+    </div>
+    ${q.notes?`<p><b>${q.lang==="ja"?"ご質問・ご要望":"Notes"}:</b> ${esc(q.notes)}</p>`:""}
+    <ul class="q-notes">${TT.qNotes.map(n => `<li>${n}</li>`).join("")}</ul>
+    <div class="q-from">株式会社 SILFINE JAPAN<br>〒811-0125 福岡県糟屋郡新宮町三代西1丁目1-7 エルヴェール新宮 1-B<br>TEL 092-985-9221 ／ FAX 092-510-7055</div>
+  </div>`;
+}
+
+let openQuote = null;
+function showQuote(q, msg){
+  openQuote = q;
+  $("#dlgTitle").textContent = q.quote_no;
+  $("#dlgMsg").textContent = msg || ""; $("#dlgMsg").style.color = "";
+  $("#sheet").innerHTML = quoteDoc(q);
+  $("#dlg").showModal();
+}
+function standaloneHTML(q){
+  let css = "";
+  try{ css = [...document.querySelector("style").sheet.cssRules].map(r => r.cssText).filter(c => c.includes(".q-doc")).join("\n"); }catch(e){}
+  return `<!DOCTYPE html><html lang="${q.lang}"><head><meta charset="utf-8"><title>${esc(q.quote_no)}</title>
+  <style>body{margin:32px;font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif}.num{font-variant-numeric:tabular-nums}${css}</style></head>
+  <body>${quoteDoc(q)}</body></html>`;
+}
+
+/* ---------------- emails ---------------- */
+const E = { // inline styles: email programs ignore <style> blocks
+  wrap:'font-family:"Hiragino Sans","Meiryo","Yu Gothic",Arial,sans-serif;color:#18222F;font-size:14px;line-height:1.6;max-width:640px;margin:0 auto',
+  head:'background:#1B3A63;color:#ffffff;padding:20px 24px;border-radius:8px 8px 0 0',
+  body:'border:1px solid #D9DED8;border-top:0;padding:24px;border-radius:0 0 8px 8px',
+  total:'border:2px solid #18222F;padding:12px 16px;font-size:18px;font-weight:bold;margin:16px 0',
+  table:'width:100%;border-collapse:collapse;font-size:13px',
+  td:'border-bottom:1px solid #E3E7EB;padding:6px 4px;vertical-align:top',
+  tdr:'border-bottom:1px solid #E3E7EB;padding:6px 4px;text-align:right;white-space:nowrap',
+  h3:'font-size:14px;margin:20px 0 6px;color:#1B3A63',
+  small:'font-size:12px;color:#5B6675'
+};
+function summaryTable(q, TT){
+  const S = TT.qS, sf = SURFACES.find(s => s.id === q.surface_type), md = METHODS[q.install_method];
+  const rows = [
+    [S.surface, sf ? sf[q.lang][0] : "—"], [S.method, md ? md[q.lang][0] : "—"],
+    [S.model, `${esc(q.model)} × ${q.panel_count}`], [S.kw, `${(+q.system_kw).toFixed(2)} kW`],
+    [S.pref, (q.lang==="ja"?PREFS_JA:PREFS_EN)[q.options.pref] ?? "—"],
+    [S.gen, `${q.annual_kwh.toLocaleString()} kWh`], [S.save, yen(q.annual_savings)],
+    [S.pay, q.options.payback ? fmt(TT.years, q.options.payback) : "—"]];
+  return `<table style="${E.table}">${rows.map(r => `<tr><td style="${E.td};color:#5B6675;width:40%">${r[0]}</td><td style="${E.td}">${r[1]}</td></tr>`).join("")}</table>`;
+}
+function linesTable(q, TT){
+  return `<table style="${E.table}">${q.lines.map(l => `<tr><td style="${E.td}">${TT[l.k]}${l.note?`<br><span style="${E.small}">${esc(l.note)}</span>`:""}</td><td style="${E.tdr}">${l.v<0?"−":""}${yen(Math.abs(l.v))}</td></tr>`).join("")}
+    <tr><td style="${E.td}">${TT.lSub}</td><td style="${E.tdr}">${yen(q.subtotal)}</td></tr>
+    <tr><td style="${E.td}">${TT.lTax}</td><td style="${E.tdr}">${yen(q.tax)}</td></tr>
+    <tr><td style="${E.td};font-weight:bold">${TT.lGrand}</td><td style="${E.tdr};font-weight:bold">${yen(q.total)}</td></tr></table>`;
+}
+function customerEmail(q){
+  const TT = T[q.lang], ja = q.lang === "ja";
+  const name = esc(q.company ? `${q.company}　${q.contact_name}` : q.contact_name);
+  return `<div style="${E.wrap}">
+    <div style="${E.head}"><div style="font-size:12px;opacity:.85">SILFINE JAPAN ／ FINE-FLEX</div>
+      <div style="font-size:20px;font-weight:bold">${ja ? "お見積り依頼を受け付けました" : "We've received your quote request"}</div></div>
+    <div style="${E.body}">
+      <p>${ja ? `${name} 様` : `Dear ${name},`}</p>
+      <p>${ja ? "このたびはFINE-FLEXのお見積りをご依頼いただき、ありがとうございます。<br>以下の内容で受け付けました。担当者より、現地調査の日程などについてご連絡いたします。"
+              : "Thank you for requesting a FINE-FLEX quote. We've received the details below, and our team will contact you about the next steps, including a site survey."}</p>
+      <p style="${E.small}">${TT.qNo}: <b>${esc(q.quote_no)}</b> ／ ${TT.qValid}: ${q.valid}</p>
+      <div style="${E.total}">${TT.qAmount}: ${yen(q.total)}</div>
+      <h3 style="${E.h3}">${TT.qSystem}</h3>${summaryTable(q, TT)}
+      <h3 style="${E.h3}">${ja ? "お見積り内訳" : "Quote breakdown"}</h3>${linesTable(q, TT)}
+      <h3 style="${E.h3}">${TT.qWarranty}</h3><ul style="margin:0;padding-left:18px">${TT.qW.map(w => `<li>${w}</li>`).join("")}</ul>
+      <ul style="${E.small};padding-left:18px;margin-top:16px">${TT.qNotes.map(n => `<li>${n}</li>`).join("")}</ul>
+      <p style="${E.small};margin-top:20px;border-top:1px solid #E3E7EB;padding-top:12px">
+        ${ja ? "このメールに返信すると、担当者に届きます。" : "Reply to this email to reach our team."}<br>
+        株式会社 SILFINE JAPAN ／ 〒811-0125 福岡県糟屋郡新宮町三代西1丁目1-7 エルヴェール新宮 1-B ／ TEL 092-985-9221</p>
+    </div></div>`;
+}
+function alertEmail(q){
+  const TT = T.ja, o = q.options;
+  const rows = [["法人名", esc(q.company) || "—"], ["ご担当者", `${esc(q.contact_name)}${q.furigana ? `（${esc(q.furigana)}）` : ""}`],
+    ["メール", `<a href="mailto:${esc(q.email)}">${esc(q.email)}</a>`], ["電話", esc(q.phone) || "—"],
+    ["住所", `${q.postal_code ? "〒"+esc(q.postal_code)+" " : ""}${esc(q.address) || "—"}`],
+    ["ご質問・ご要望", esc(q.notes) || "—"], ["お客様の言語", q.lang === "en" ? "英語" : "日本語"],
+    ["パワコン", o.pcs ? "含む" : "含まない"], ["蓄電池", (BATTERIES.find(b => b.id === o.battery) || {}).ja || "—"]];
+  return `<div style="${E.wrap}">
+    <div style="${E.head}"><div style="font-size:12px;opacity:.85">FINE-FLEX 見積りシステム</div>
+      <div style="font-size:20px;font-weight:bold">新しい見積り依頼が届きました</div></div>
+    <div style="${E.body}">
+      <div style="${E.total}">${yen(q.total)}（税込） ／ ${(+q.system_kw).toFixed(2)} kW</div>
+      <p style="${E.small}">${esc(q.quote_no)} ／ ${q.created.slice(0,16).replace("T"," ")}（UTC）</p>
+      <h3 style="${E.h3}">お客様</h3>
+      <table style="${E.table}">${rows.map(r => `<tr><td style="${E.td};color:#5B6675;width:35%">${r[0]}</td><td style="${E.td}">${r[1]}</td></tr>`).join("")}</table>
+      <h3 style="${E.h3}">システム</h3>${summaryTable({...q, lang:"ja"}, TT)}
+      <h3 style="${E.h3}">お見積り内訳</h3>${linesTable(q, TT)}
+      <p style="margin-top:20px">${ADMIN_URL ? `<a href="${ADMIN_URL}" style="background:#1B3A63;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">管理画面で開く</a>` : "管理画面（admin.html）でステータスを更新してください。"}</p>
+      <p style="${E.small}">このメールに返信すると、お客様に直接届きます。</p>
+    </div></div>`;
+}
+async function sendEmails(q){
+  if (!window.emailjs) return { ok:false, reason:t("mailBlocked") };
+  try{ emailjs.init({ publicKey: EMAILJS_KEY }); }catch(e){}
+  const ja = q.lang === "ja";
+  const toCustomer = emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    to_email: q.email, reply_to: NOTIFY_EMAIL, from_name: EMAIL_FROM_NAME,
+    subject: ja ? `【FINE-FLEX】お見積り依頼を受け付けました（${q.quote_no}）` : `[FINE-FLEX] We've received your quote request (${q.quote_no})`,
+    message_html: customerEmail(q) });
+  const toSilfine = emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    to_email: NOTIFY_EMAIL, reply_to: q.email, from_name: EMAIL_FROM_NAME,
+    subject: `【新規見積り依頼】${q.company || q.contact_name} 様 ${(+q.system_kw).toFixed(1)}kW ${yen(q.total)}（${q.quote_no}）`,
+    message_html: alertEmail(q) });
+  const [a, b] = await Promise.allSettled([toCustomer, toSilfine]);
+  const why = r => r && (r.status || r.text) ? `${r.status ?? ""} ${r.text ?? ""}`.trim() : String(r && r.message || r);
+  if (a.status === "rejected") console.error("Customer email failed", a.reason);
+  if (b.status === "rejected") console.error("Alert email failed", b.reason);
+  const failed = [a, b].find(x => x.status === "rejected");
+  return failed ? { ok:false, reason:why(failed.reason) } : { ok:true };
+}
+
+/* ---------------- submit ---------------- */
+function newQuoteNo(){
+  const d = new Date(), p = n => String(n).padStart(2,"0");
+  return `SFQ-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+}
+
+async function submit(){
+  const err = $("#formErr");
+  const name = $("#cName").value.trim(), email = $("#cEmail").value.trim();
+  if (!name){ err.textContent = t("errName"); $("#cName").focus(); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err.textContent = t("errEmail"); $("#cEmail").focus(); return; }
+  if (!$("#consent").checked){ err.textContent = t("errConsent"); $("#consent").focus(); return; }
+  err.textContent = "";
+
+  const c = calc(), now = new Date();
+  const row = {
+    quote_no: newQuoteNo(), lang: state.lang,
+    company: $("#cCompany").value.trim() || null, contact_name: name,
+    furigana: $("#cKana").value.trim() || null, email,
+    phone: $("#cTel").value.trim() || null, postal_code: $("#cZip").value.trim() || null,
+    address: [PREFS_JA[state.pref], $("#cAddr").value.trim()].filter(Boolean).join(" "),
+    notes: $("#cNotes").value.trim() || null,
+    model: c.p.id, panel_count: c.n, system_kw: +c.kw.toFixed(2),
+    surface_type: state.surface, install_method: state.install,
+    options: { pcs: state.pcs, battery: state.battery, pref: state.pref, mode: state.mode,
+               area: state.mode==="area" ? state.area : null, payback: c.payback ? +c.payback.toFixed(1) : null },
+    lines: c.lines.map(l => ({k:l.k, note:l.note ?? null, v:l.v, qty:l.qty ?? null, unit:l.unit ?? null, up:l.up ?? null})),
+    subtotal: c.sub, tax: c.tax, total: c.total, annual_kwh: c.gen, annual_savings: c.savings
+  };
+
+  const btn = $("#saveBtn"); btn.disabled = true;
+  let msg;
+  if (sb){
+    const { error } = await sb.from("quotes").insert(row);
+    btn.disabled = false;
+    if (error){ console.error(error); toast(t("sendFail")); return; }
+    msg = t("sentOk");
+  } else {
+    btn.disabled = false;
+    msg = t("savedDemo");
+  }
+  const copy = { ...row, created: now.toISOString(),
+    valid: new Date(now.getTime() + SETTINGS.valid_days*864e5).toISOString().slice(0,10) };
+  local.add(copy); renderSaved();
+  showQuote(copy, msg);
+  if (sb){
+    let mailed;
+    try{ mailed = await sendEmails(copy); }catch(e){ mailed = { ok:false, reason:String(e && e.message || e) }; }
+    // the quote is already saved even if email fails
+    const el = $("#dlgMsg");
+    if (mailed.ok){ el.textContent = `${msg} ${t("mailSent").replace("{e}", copy.email)}`; }
+    else { el.textContent = `${msg} ${t("mailFail").replace("{r}", mailed.reason)}`; el.style.color = "var(--danger)"; }
+  }
+}
+
+function toast(m){
+  const el = $("#toast"); el.textContent = m; el.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.lang){ state.lang = b.dataset.lang; renderAll(); }
+  else if (b.dataset.model){ state.model = b.dataset.model; renderPanels(); renderSummary(); }
+  else if (b.dataset.mode){
+    state.mode = b.dataset.mode;
+    document.querySelectorAll("[data-mode]").forEach(x => x.setAttribute("aria-pressed", x.dataset.mode===state.mode));
+    $("#countField").hidden = state.mode!=="count"; $("#areaField").hidden = state.mode!=="area";
+    renderSummary();
+  }
+  else if (b.id==="minus" || b.id==="plus"){
+    state.count = Math.max(1, Math.min(5000, (parseInt($("#count").value)||1) + (b.id==="plus"?1:-1)));
+    $("#count").value = state.count; renderSummary();
+  }
+  else if (b.dataset.open){ const q = local.list().find(x => x.quote_no===b.dataset.open); if (q) showQuote(q); }
+  else if (b.id==="saveBtn") submit();
+  else if (b.id==="closeBtn") $("#dlg").close();
+  else if (b.id==="printBtn" && openQuote){
+    const w = window.open("", "_blank");
+    if (w){ w.document.write(standaloneHTML(openQuote)); w.document.close(); w.focus(); setTimeout(() => w.print(), 400); }
+  }
+  else if (b.id==="dlBtn" && openQuote){
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([standaloneHTML(openQuote)], {type:"text/html"}));
+    a.download = `${openQuote.quote_no}.html`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+});
+document.addEventListener("change", e => {
+  const el = e.target;
+  if (el.name==="surface"){
+    state.surface = el.value; state.model = surface(el.value).model;
+    renderPanels(); renderInstalls(); renderSummary();
+  }
+  else if (el.name==="install"){ state.install = el.value; renderSummary(); }
+  else if (el.id==="pcs"){ state.pcs = el.checked; renderSummary(); }
+  else if (el.id==="battery"){ state.battery = el.value; renderSummary(); }
+  else if (el.id==="pref"){ state.pref = +el.value; renderSummary(); }
+});
+document.addEventListener("input", e => {
+  if (e.target.id==="count"){ state.count = parseInt(e.target.value)||1; renderSummary(); }
+  else if (e.target.id==="area"){ state.area = parseFloat(e.target.value)||1; renderSummary(); }
+});
+
+/* ---------------- start ---------------- */
+async function start(){
+  renderAll();
+  if (!SUPABASE_KEY || SUPABASE_KEY.startsWith("PASTE") || !window.supabase) return;
+  try{
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const [prod, set] = await Promise.all([
+      sb.from("products").select("*").eq("active", true).order("sort"),
+      sb.from("settings").select("data").eq("id", 1).single()
+    ]);
+    if (prod.error || set.error) throw (prod.error || set.error);
+    if (prod.data.length) PRODUCTS = prod.data.map(p => ({...p, weight_kg:+p.weight_kg, efficiency:+p.efficiency}));
+    SETTINGS = { ...SETTINGS, ...set.data.data };
+    if (!PRODUCTS.some(p => p.id === state.model)) state.model = PRODUCTS[0].id;
+  }catch(e){
+    console.error("Supabase connection failed, using offline data", e);
+    sb = null;
+  }
+  renderAll();
+}
+start();
+</script>
+</body>
+</html>
